@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Disponibilidade da Frota</title>
 
+  <!-- Fontes & Ícones -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet" />
+  <!-- Google Charts (carrega uma única vez) -->
   <script src="https://www.gstatic.com/charts/loader.js"></script>
 
   <style>
@@ -28,7 +30,6 @@
     .filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-top:14px}
     .input, select, button{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text)}
     .input::placeholder{color:#64748b}
-    select[multiple]{height:auto;padding:8px 10px}
     button.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
     button.ghost{background:transparent;color:var(--muted)}
     .row{display:flex;gap:12px;align-items:center}
@@ -58,7 +59,7 @@
     .muted{color:var(--muted);font-size:12px}
     .meta{display:flex;gap:10px;flex-wrap:wrap;color:#cbd5e1;font-size:13px;margin-top:8px}
 
-    #chart_div{height:320px}
+    #chart_div{height:360px}
     #pie_div{height:260px}
     #pareto_div{height:360px}
     .foot{margin:28px 0;color:#64748b;font-size:12px;text-align:center}
@@ -76,7 +77,7 @@
   </div>
 
   <div class="wrap">
-    <!-- Filtros -->
+    <!-- Filtros (lista/KPIs) -->
     <div class="filters">
       <div class="row" style="flex:1;flex-wrap:wrap">
         <label>Data <input class="input" type="date" id="fData"></label>
@@ -88,15 +89,6 @@
             <option value="MNT">MNT</option>
           </select>
         </label>
-
-        <label>Base
-          <select id="baseSel" multiple size="3" style="min-width:220px"></select>
-        </label>
-
-        <label>Aeronave
-          <select id="prefSel" multiple size="3" style="min-width:200px"></select>
-        </label>
-
         <label>Buscar <input class="input" id="fBusca" placeholder="Prefixo, CMTE, Mecânico..."></label>
       </div>
       <div class="row">
@@ -117,37 +109,37 @@
     <div id="lista" class="grid"></div>
 
     <!-- Colunas -->
-   <div class="section">
-  <h2>Disponíveis x Indisponíveis</h2>
+    <div class="section">
+      <h2>Disponíveis x Indisponíveis</h2>
 
-  <div class="row" style="gap:12px; align-items:center">
-    <label>Base
-      <select id="baseChart" style="min-width:180px">
-        <option value="">Todas</option>
-      </select>
-    </label>
+      <div class="row" style="gap:12px; align-items:center">
+        <label>Base
+          <select id="baseChart" style="min-width:180px">
+            <option value="">Todas</option>
+          </select>
+        </label>
 
-    <label>Aeronave
-      <select id="prefChart" style="min-width:160px">
-        <option value="">Todas</option>
-      </select>
-    </label>
+        <label>Aeronave
+          <select id="prefChart" style="min-width:160px">
+            <option value="">Todas</option>
+          </select>
+        </label>
 
-    <div style="flex:1"></div>
+        <div style="flex:1"></div>
 
-    <label>Período
-      <select id="rangeSel">
-        <option value="15d">15 dias</option>
-        <option value="30d" selected>30 dias</option>
-        <option value="60d">60 dias</option>
-        <option value="90d">90 dias</option>
-        <option value="180d">180 dias</option>
-        <option value="12m">12 meses</option>
-      </select>
-    </label>
-  </div>
-</div>
-<div id="chart_div"></div>
+        <label>Período
+          <select id="rangeSel">
+            <option value="15d">15 dias</option>
+            <option value="30d" selected>30 dias</option>
+            <option value="60d">60 dias</option>
+            <option value="90d">90 dias</option>
+            <option value="180d">180 dias</option>
+            <option value="12m">12 meses</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div id="chart_div"></div>
 
     <!-- Pizza -->
     <div class="section">
@@ -179,9 +171,13 @@
 
   <script>
     // ======= CONFIGURE AQUI =======
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxIR_2L3vmoZXRPoSwjWlwjrfGMJruGii_cXxGpKqkPt4ax7Th7g726348g5eA33bHB/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzEf-HLOrj-5DroZjD6VWKHs3ttfVn9X_Z5mXTZINoWeWcYB5tUtuDGAJArlt3mwqON/exec';
     // ==============================
 
+    // Google Charts – carrega uma única vez
+    google.charts.load('current', {'packages':['corechart']});
+
+    // Helper de API
     async function api(fn, params = {}) {
       const qs = new URLSearchParams({ fn, ...params }).toString();
       const res = await fetch(`${API_URL}?${qs}`, { method: 'GET' });
@@ -191,6 +187,12 @@
     }
     const $ = s => document.querySelector(s);
 
+    // Debounce
+    function debounce(fn, ms=350){
+      let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
+    }
+
+    // Badges
     function chip(status){
       const S = String(status||'').toUpperCase();
       if (S==='STAND BY') return '<span class="chip sb">STAND BY</span>';
@@ -199,6 +201,7 @@
       return `<span class="chip">${status||'-'}</span>`;
     }
 
+    // Lista
     function renderLista(rows){
       const el = $('#lista');
       if (!rows.length){ el.innerHTML = '<div class="muted">Nenhum registro.</div>'; return; }
@@ -219,14 +222,15 @@
         </div>
       `).join('');
     }
+
+    // KPIs
     function setKpis(k){
       $('#kDisp').textContent = k.disponiveis ?? '0';
       $('#kMissao').textContent = k.missao ?? '0';
       $('#kMnt').textContent   = k.manutencao ?? '0';
     }
 
-    google.charts.load('current', {'packages':['corechart']});
-
+    // ====== Gráficos ======
     // Colunas
     function drawColumns(rows, isMonthly){
       const dt = new google.visualization.DataTable();
@@ -235,40 +239,23 @@
       dt.addColumn('number','Indisponível');
 
       const dataRows = isMonthly
-        ? rows.map(r => [String(r.Mes), +r['Disponível']||0, +r['Indisponível']||0])
-        : rows.map(r => [String(r.Data), +r['Disponível']||0, +r['Indisponível']||0]);
+        ? rows.map(r=>[String(r.Mes), +r['Disponível']||0, +r['Indisponível']||0])
+        : rows.map(r=>[String(r.Data), +r['Disponível']||0, +r['Indisponível']||0]);
 
-      dt.addRows(dataRows);
+      dataRows.forEach(r => dt.addRow(r));
 
       const options = {
         legend:{ position:'bottom', textStyle:{ color:'#cbd5e1' } },
         backgroundColor:'transparent',
-        hAxis:{ textStyle:{ color:'#94a3b8' }, slantedText:true, slantedTextAngle:60 },
+        hAxis:{ textStyle:{ color:'#94a3b8' } },
         vAxis:{ textStyle:{ color:'#94a3b8' }, gridlines:{ color:'#1f2937' } },
-        chartArea:{ left:50, top:10, right:10, height:240 },
-        height:320,
+        chartArea:{ left:40, top:10, right:10, height:260 },
+        height:360,
         isStacked:false,
-        series:{ 0:{ color:'#22c55e' }, 1:{ color:'#ef4444' } },
-        bar:{ groupWidth: isMonthly ? '60%' : '75%' }
+        series:{ 0:{ color:'#22c55e' }, 1:{ color:'#ef4444' } }
       };
       new google.visualization.ColumnChart($('#chart_div')).draw(dt, options);
     }
-    async function carregarGrafico(){
-      const range   = document.getElementById('rangeSel').value || '30d';
-      const base    = document.getElementById('baseChart').value || '';
-      const prefixo = document.getElementById('prefChart').value || '';
-
-  // API espera pipes; como agora é 1 seleção, mandamos base/prefixo únicos (ou vazio)
-  const rows = await api('series', {
-    range,
-    bases: base,
-    prefixos: prefixo
-  });
-
-  const isMonthly = (range === '12m');
-  google.charts.setOnLoadCallback(()=> drawColumns(rows, isMonthly));
-    }
-
 
     // Pizza
     function drawPie(rows, date){
@@ -280,17 +267,16 @@
         pieHole:0.55, legend:{position:'bottom', textStyle:{color:'#cbd5e1'}},
         backgroundColor:'transparent',
         chartArea:{ left:10, top:10, right:10, height:180 },
-        slices:{ 0:{color:'#22c55e'}, 1:{color:'#3b82f6'}, 2:{color:'#ef4444'} }
+        slices:{
+          0:{color:'#22c55e'}, // Disponível
+          1:{color:'#3b82f6'}, // Missão
+          2:{color:'#ef4444'}  // Manutenção
+        }
       };
       new google.visualization.PieChart($('#pie_div')).draw(dt, options);
     }
-    async function carregarPizza(){
-      const date = $('#fData').value || new Date().toISOString().slice(0,10);
-      const rows = await api('pie', { date });
-      google.charts.setOnLoadCallback(()=> drawPie(rows, date));
-    }
 
-    // Pareto
+    // Pareto (barras horizontais)
     function drawPareto(rows){
       const dt = new google.visualization.DataTable();
       dt.addColumn('string','Motivo');
@@ -309,73 +295,67 @@
       };
       new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
     }
-    async function carregarPareto(){
-      const range = $('#paretoRangeSel').value || '30d';
-      const rows = await api('pareto', { range });
-      google.charts.setOnLoadCallback(()=> drawPareto(rows));
-    }
 
-    // Lookups (multi-selects)
-    function fillMultiSelect(sel, items){
-      sel.innerHTML = items.map(v => `<option value="${v}">${v}</option>`).join('');
-    }
+    // Lookups (preenche selects do gráfico)
     async function carregarLookups(){
-  const data = await api('lookups'); // {bases:[], prefixos:[]}
+      const data = await api('lookups'); // {bases:[], prefixos:[]}
 
-  // Base do GRÁFICO
-  const baseChart = document.getElementById('baseChart');
-  baseChart.innerHTML = '<option value="">Todas</option>' +
-    data.bases.map(v => `<option value="${v}">${v}</option>`).join('');
+      const baseChart = document.getElementById('baseChart');
+      baseChart.innerHTML = '<option value="">Todas</option>' +
+        data.bases.map(v => `<option value="${v}">${v}</option>`).join('');
 
-  // Aeronave do GRÁFICO
-  const prefChart = document.getElementById('prefChart');
-  prefChart.innerHTML = '<option value="">Todas</option>' +
-    data.prefixos.map(v => `<option value="${v}">${v}</option>`).join('');
+      const prefChart = document.getElementById('prefChart');
+      prefChart.innerHTML = '<option value="">Todas</option>' +
+        data.prefixos.map(v => `<option value="${v}">${v}</option>`).join('');
     }
 
-    function getSelectedValues(selId){
-      const sel = document.getElementById(selId);
-      return Array.from(sel.selectedOptions).map(o => o.value);
-    }
+    // Atualiza tudo em paralelo
+    async function refreshAll(){
+      const date    = $('#fData').value || '';
+      const status  = $('#fStatus').value || '';
+      const search  = $('#fBusca').value || '';
+      const range   = $('#rangeSel').value || '30d';
+      const base    = $('#baseChart').value || '';
+      const prefixo = $('#prefChart').value || '';
 
-    // Lista & KPIs
-    async function carregarListaEKpis(){
-      const date = $('#fData').value || '';
-      const base = ''; // filtro de base aqui é pelos multi-selects do gráfico
-      const status = $('#fStatus').value || '';
-      const search = $('#fBusca').value || '';
-      const [rows, k] = await Promise.all([
-        api('list', { date, base, status, search }),
-        api('kpis', { date })
-      ]);
-      renderLista(rows);
-      setKpis(k);
+      const reqs = [
+        api('list',   { date, status, search }),
+        api('kpis',   { date }),
+        api('pie',    { date }),
+        api('series', { range, bases:base, prefixos:prefixo }),
+        api('pareto', { range })
+      ];
+
+      const [listRes, kpisRes, pieRes, seriesRes, paretoRes] = await Promise.all(reqs);
+      renderLista(listRes);
+      setKpis(kpisRes);
+      google.charts.setOnLoadCallback(()=> {
+        drawPie(pieRes, date);
+        drawColumns(seriesRes, range==='12m');
+        drawPareto(paretoRes);
+      });
     }
 
     // Eventos UI
-    $('#btnFiltrar').addEventListener('click', ()=>{
-      carregarListaEKpis();
-      carregarPizza();
-      carregarGrafico();
-    });
+    $('#btnFiltrar').addEventListener('click', refreshAll);
     $('#btnHoje').addEventListener('click', ()=>{
       const d = new Date(); $('#fData').value = d.toISOString().slice(0,10);
-      carregarListaEKpis(); carregarPizza(); carregarGrafico();
+      refreshAll();
     });
-    $('#btnRefresh').addEventListener('click', ()=>{
-      carregarListaEKpis(); carregarGrafico(); carregarPizza(); carregarPareto();
-    });
-    $('#rangeSel').addEventListener('change', carregarGrafico);
-    $('#paretoRangeSel').addEventListener('change', carregarPareto);
+    $('#btnRefresh').addEventListener('click', refreshAll);
+
+    $('#rangeSel').addEventListener('change', refreshAll);
+    $('#baseChart').addEventListener('change', refreshAll);
+    $('#prefChart').addEventListener('change', refreshAll);
+
+    $('#fBusca').addEventListener('input', debounce(refreshAll, 400));
+    $('#fStatus').addEventListener('change', refreshAll);
 
     // Inicial
     (async function init(){
       $('#fData').value = new Date().toISOString().slice(0,10);
       await carregarLookups();
-      await carregarListaEKpis();
-      await carregarGrafico();
-      await carregarPizza();
-      await carregarPareto();
+      await refreshAll();
     })();
   </script>
 </body>
