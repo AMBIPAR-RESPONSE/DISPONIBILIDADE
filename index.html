@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet" />
 
-  <!-- Google Charts (carrega uma única vez) -->
+  <!-- Google Charts -->
   <script src="https://www.gstatic.com/charts/loader.js"></script>
 
   <style>
@@ -49,7 +49,10 @@
     .section h2{margin:0;font-size:18px}
 
     .grid{display:grid;gap:14px}
-    @media(min-width:900px){.grid{grid-template-columns:repeat(3,1fr)}}
+    .grid-3{display:grid;gap:14px}
+    @media(min-width:900px){.grid-3{grid-template-columns:repeat(3,1fr)}}
+    .col{display:flex;flex-direction:column;gap:14px}
+
     .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
     .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
     .prefixo{font-weight:800;font-size:18px}
@@ -59,6 +62,8 @@
     .chip.mt{color:#f87171}
     .muted{color:var(--muted);font-size:12px}
     .meta{display:flex;gap:10px;flex-wrap:wrap;color:#cbd5e1;font-size:13px;margin-top:8px}
+
+    .colTitle{display:flex;align-items:center;justify-content:space-between;color:#cbd5e1;margin-bottom:4px;font-weight:700;letter-spacing:.2px}
 
     #chart_div{height:360px}
     #pie_div{height:260px}
@@ -105,9 +110,20 @@
       <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
     </div>
 
-    <!-- Lista -->
-    <div class="section"><h2>Programação</h2></div>
-    <div id="lista" class="grid"></div>
+    <!-- Programação (agora com filtro e 3 colunas) -->
+    <div class="section">
+      <h2>Programação</h2>
+      <div class="row">
+        <label>Base
+          <select id="progBase" style="min-width:180px">
+            <option value="">Todas</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div id="lista" class="grid-3">
+      <!-- 3 colunas geradas via JS -->
+    </div>
 
     <!-- Gráfico (colunas) -->
     <div class="section">
@@ -180,28 +196,13 @@
 
   <script>
     // ======= CONFIGURE AQUI =======
-    const API_URL = 'https://script.google.com/macros/s/AKfycbz_9gPw94oJgKo1WmvdbQBE4lp0uzamrBhRcf6zArcvs1mNIrBA3w5IG24KwwhVt4mv/exec';
+    const API_URL = 'https://script.google.com/macros/s/COLE_SUA_URL_EXEC_AQUI/exec';
     // ==============================
 
-    // Carrega Google Charts uma única vez
     google.charts.load('current', {'packages':['corechart']});
-
-    // Helper de API
-    async function api(fn, params = {}) {
-      const qs = new URLSearchParams({ fn, ...params }).toString();
-      const res = await fetch(`${API_URL}?${qs}`, { method: 'GET' });
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || 'Erro na API');
-      return json.data;
-    }
     const $ = s => document.querySelector(s);
+    const debounce = (fn,ms=350)=>{ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);}};
 
-    // Debounce para digitar na busca
-    function debounce(fn, ms=350){
-      let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
-    }
-
-    // Badge de status
     function chip(status){
       const S = String(status||'').toUpperCase();
       if (S==='STAND BY') return '<span class="chip sb">STAND BY</span>';
@@ -210,48 +211,61 @@
       return `<span class="chip">${status||'-'}</span>`;
     }
 
-    // Lista
-    function renderLista(rows){
-      const el = $('#lista');
-      if (!rows.length){ el.innerHTML = '<div class="muted">Nenhum registro.</div>'; return; }
-      el.innerHTML = rows.map(r=>`
-        <div class="card">
-          <div class="title">
-            <div class="prefixo">${r.Prefixo||'-'}</div>
-            ${chip(r.Status)}
-          </div>
-          <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
-          <div class="meta">
-            <div><b>Missão:</b> ${r.Missao||'-'}</div>
-            <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
-            <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
-            ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
-          </div>
-          ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
-        </div>
-      `).join('');
-    }
+    /* === LISTA AGRUPADA EM 3 COLUNAS === */
+    function renderListaGrouped(rows){
+      // filtro de base específico da programação
+      const baseSel = $('#progBase').value || '';
+      const norm = s => String(s||'').toLowerCase();
 
-    // KPIs
-    function setKpis(k){
-      $('#kDisp').textContent = k.disponiveis ?? '0';
-      $('#kMissao').textContent = k.missao ?? '0';
-      $('#kMnt').textContent   = k.manutencao ?? '0';
+      const SB  = []; // STAND BY
+      const MS  = []; // MISSÃO
+      const MNT = []; // MNT
+
+      for(const r of rows){
+        if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
+        const st = String(r.Status||'').toUpperCase();
+        const card = `
+          <div class="card">
+            <div class="title">
+              <div class="prefixo">${r.Prefixo||'-'}</div>
+              ${chip(r.Status)}
+            </div>
+            <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
+            <div class="meta">
+              <div><b>Missão:</b> ${r.Missao||'-'}</div>
+              <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
+              <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
+              ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
+            </div>
+            ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
+          </div>`;
+        if (st==='STAND BY') SB.push(card);
+        else if (st==='MNT') MNT.push(card);
+        else MS.push(card); // MISSÃO (ou outros cairão aqui)
+      }
+
+      const col = (title, cls, arr) => `
+        <div class="col">
+          <div class="colTitle">${title} <span class="muted">(${arr.length})</span></div>
+          ${arr.length ? arr.join('') : `<div class="muted">—</div>`}
+        </div>`;
+
+      $('#lista').innerHTML = col('STAND BY', 'sb', SB) +
+                              col('EM MISSÃO', 'ms', MS) +
+                              col('EM MANUTENÇÃO', 'mt', MNT);
     }
 
     // ====== Gráficos ======
-    // Colunas (Disponível x Indisponível)
     function drawColumns(rows, isMonthly){
       const dt = new google.visualization.DataTable();
       dt.addColumn('string', isMonthly ? 'Mês' : 'Data');
       dt.addColumn('number','Disponível');
       dt.addColumn('number','Indisponível');
 
-      const dataRows = isMonthly
+      (isMonthly
         ? rows.map(r=>[String(r.Mes), +r['Disponível']||0, +r['Indisponível']||0])
-        : rows.map(r=>[String(r.Data), +r['Disponível']||0, +r['Indisponível']||0]);
-
-      dataRows.forEach(r => dt.addRow(r));
+        : rows.map(r=>[String(r.Data), +r['Disponível']||0, +r['Indisponível']||0])
+      ).forEach(r=>dt.addRow(r));
 
       const options = {
         legend:{ position:'bottom', textStyle:{ color:'#cbd5e1' } },
@@ -265,8 +279,6 @@
       };
       new google.visualization.ColumnChart($('#chart_div')).draw(dt, options);
     }
-
-    // Pizza (Status do dia)
     function drawPie(rows, date){
       const dt = new google.visualization.DataTable();
       dt.addColumn('string','Status'); dt.addColumn('number','Qtde');
@@ -276,16 +288,10 @@
         pieHole:0.55, legend:{position:'bottom', textStyle:{color:'#cbd5e1'}},
         backgroundColor:'transparent',
         chartArea:{ left:10, top:10, right:10, height:180 },
-        slices:{
-          0:{color:'#22c55e'}, // Disponível
-          1:{color:'#3b82f6'}, // Missão
-          2:{color:'#ef4444'}  // Manutenção
-        }
+        slices:{ 0:{color:'#22c55e'}, 1:{color:'#3b82f6'}, 2:{color:'#ef4444'} }
       };
       new google.visualization.PieChart($('#pie_div')).draw(dt, options);
     }
-
-    // Pareto (barras horizontais)
     function drawPareto(rows){
       const dt = new google.visualization.DataTable();
       dt.addColumn('string','Motivo');
@@ -305,24 +311,7 @@
       new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
     }
 
-    // Lookups (preenche selects)
-    async function carregarLookups(){
-      const data = await api('lookups'); // {bases:[], prefixos:[]}
-
-      const baseChart = document.getElementById('baseChart');
-      baseChart.innerHTML = '<option value="">Todas</option>' +
-        data.bases.map(v => `<option value="${v}">${v}</option>`).join('');
-
-      const prefChart = document.getElementById('prefChart');
-      prefChart.innerHTML = '<option value="">Todas</option>' +
-        data.prefixos.map(v => `<option value="${v}">${v}</option>`).join('');
-
-      const pieBase = document.getElementById('pieBase');
-      pieBase.innerHTML = '<option value="">Todas</option>' +
-        data.bases.map(v => `<option value="${v}">${v}</option>`).join('');
-    }
-
-    // Atualiza tudo em paralelo
+    // Chamada única ao backend (endpoint dashboard)
     async function refreshAll(){
       const date    = $('#fData').value || '';
       const status  = $('#fStatus').value || '';
@@ -337,28 +326,32 @@
       const res = await fetch(url).then(r=>r.json());
       const data = res.data;
 
-  // preenche lookups apenas na 1ª vez (se quiser, guarde um flag)
-  if ($('#baseChart').options.length<=1){
-    $('#baseChart').innerHTML = '<option value="">Todas</option>' + data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
-    $('#prefChart').innerHTML = '<option value="">Todas</option>' + data.lookups.prefixos.map(v=>`<option>${v}</option>`).join('');
-    $('#pieBase').innerHTML   = '<option value="">Todas</option>' + data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
-  }
+      // lookups (1ª vez)
+      if ($('#baseChart').options.length<=1){
+        const basesOpt   = '<option value="">Todas</option>' + data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
+        const prefOpt    = '<option value="">Todas</option>' + data.lookups.prefixos.map(v=>`<option>${v}</option>`).join('');
+        $('#baseChart').innerHTML = basesOpt;
+        $('#pieBase').innerHTML   = basesOpt;
+        $('#progBase').innerHTML  = basesOpt;
+        $('#prefChart').innerHTML = prefOpt;
+      }
 
-  renderLista(data.list);
-  setKpis(data.kpis);
-  google.charts.setOnLoadCallback(()=> {
-    drawPie(data.pie, date);
-    drawColumns(data.series, range==='12m');
-    drawPareto(data.pareto);
-  });
-}
+      // renderizações
+      renderListaGrouped(data.list);        // agrupado em colunas
+      $('#kDisp').textContent = data.kpis.disponiveis ?? '0';
+      $('#kMissao').textContent = data.kpis.missao ?? '0';
+      $('#kMnt').textContent   = data.kpis.manutencao ?? '0';
 
-    // Eventos UI
+      google.charts.setOnLoadCallback(()=> {
+        drawPie(data.pie, date);
+        drawColumns(data.series, range==='12m');
+        drawPareto(data.pareto);
+      });
+    }
+
+    // Eventos
     $('#btnFiltrar').addEventListener('click', refreshAll);
-    $('#btnHoje').addEventListener('click', ()=>{
-      const d = new Date(); $('#fData').value = d.toISOString().slice(0,10);
-      refreshAll();
-    });
+    $('#btnHoje').addEventListener('click', ()=>{ $('#fData').value = new Date().toISOString().slice(0,10); refreshAll(); });
     $('#btnRefresh').addEventListener('click', refreshAll);
 
     $('#rangeSel').addEventListener('change', refreshAll);
@@ -366,13 +359,15 @@
     $('#prefChart').addEventListener('change', refreshAll);
     $('#pieBase').addEventListener('change', refreshAll);
 
+    // Filtro de Programação (só re-renderiza a lista já carregada)
+    $('#progBase').addEventListener('change', ()=> refreshAll());
+
     $('#fBusca').addEventListener('input', debounce(refreshAll, 400));
     $('#fStatus').addEventListener('change', refreshAll);
 
     // Inicial
     (async function init(){
       $('#fData').value = new Date().toISOString().slice(0,10);
-      await carregarLookups();
       await refreshAll();
     })();
   </script>
