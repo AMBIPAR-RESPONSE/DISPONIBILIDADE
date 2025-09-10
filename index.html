@@ -117,22 +117,37 @@
     <div id="lista" class="grid"></div>
 
     <!-- Colunas -->
-    <div class="section">
-      <h2>Disponíveis x Indisponíveis</h2>
-      <div class="row">
-        <label>Período
-          <select id="rangeSel">
-            <option value="15d">15 dias</option>
-            <option value="30d" selected>30 dias</option>
-            <option value="60d">60 dias</option>
-            <option value="90d">90 dias</option>
-            <option value="180d">180 dias</option>
-            <option value="12m">12 meses</option>
-          </select>
-        </label>
-      </div>
-    </div>
-    <div id="chart_div"></div>
+   <div class="section">
+  <h2>Disponíveis x Indisponíveis</h2>
+
+  <div class="row" style="gap:12px; align-items:center">
+    <label>Base
+      <select id="baseChart" style="min-width:180px">
+        <option value="">Todas</option>
+      </select>
+    </label>
+
+    <label>Aeronave
+      <select id="prefChart" style="min-width:160px">
+        <option value="">Todas</option>
+      </select>
+    </label>
+
+    <div style="flex:1"></div>
+
+    <label>Período
+      <select id="rangeSel">
+        <option value="15d">15 dias</option>
+        <option value="30d" selected>30 dias</option>
+        <option value="60d">60 dias</option>
+        <option value="90d">90 dias</option>
+        <option value="180d">180 dias</option>
+        <option value="12m">12 meses</option>
+      </select>
+    </label>
+  </div>
+</div>
+<div id="chart_div"></div>
 
     <!-- Pizza -->
     <div class="section">
@@ -239,13 +254,21 @@
       new google.visualization.ColumnChart($('#chart_div')).draw(dt, options);
     }
     async function carregarGrafico(){
-      const range = $('#rangeSel').value || '30d';
-      const bases = getSelectedValues('baseSel').join('|');
-      const prefixos = getSelectedValues('prefSel').join('|');
-      const rows = await api('series', { range, bases, prefixos });
-      const isMonthly = (range === '12m');
-      google.charts.setOnLoadCallback(()=> drawColumns(rows, isMonthly));
+      const range   = document.getElementById('rangeSel').value || '30d';
+      const base    = document.getElementById('baseChart').value || '';
+      const prefixo = document.getElementById('prefChart').value || '';
+
+  // API espera pipes; como agora é 1 seleção, mandamos base/prefixo únicos (ou vazio)
+  const rows = await api('series', {
+    range,
+    bases: base,
+    prefixos: prefixo
+  });
+
+  const isMonthly = (range === '12m');
+  google.charts.setOnLoadCallback(()=> drawColumns(rows, isMonthly));
     }
+
 
     // Pizza
     function drawPie(rows, date){
@@ -297,10 +320,19 @@
       sel.innerHTML = items.map(v => `<option value="${v}">${v}</option>`).join('');
     }
     async function carregarLookups(){
-      const data = await api('lookups'); // {bases:[], prefixos:[]}
-      fillMultiSelect(document.getElementById('baseSel'), data.bases);
-      fillMultiSelect(document.getElementById('prefSel'), data.prefixos);
+  const data = await api('lookups'); // {bases:[], prefixos:[]}
+
+  // Base do GRÁFICO
+  const baseChart = document.getElementById('baseChart');
+  baseChart.innerHTML = '<option value="">Todas</option>' +
+    data.bases.map(v => `<option value="${v}">${v}</option>`).join('');
+
+  // Aeronave do GRÁFICO
+  const prefChart = document.getElementById('prefChart');
+  prefChart.innerHTML = '<option value="">Todas</option>' +
+    data.prefixos.map(v => `<option value="${v}">${v}</option>`).join('');
     }
+
     function getSelectedValues(selId){
       const sel = document.getElementById(selId);
       return Array.from(sel.selectedOptions).map(o => o.value);
