@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Disponibilidade da Frota</title>
+
+  <!-- Fontes & Ícones -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet" />
+  <!-- Google Charts -->
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b1320; --card:#111827; --muted:#94a3b8; --text:#e5e7eb; --border:#1f2937;
+      --brand:#22c55e; --brand-2:#3b82f6; --danger:#ef4444; --chip:#0f172a;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:1200px;margin:0 auto;padding:20px}
+
+    .topbar{position:sticky;top:0;z-index:10;background:rgba(11,19,32,.9);backdrop-filter: blur(8px);border-bottom:1px solid var(--border);}
+    .topbar .row{display:flex;align-items:center;gap:16px;min-height:64px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+    .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 4px rgba(34,197,94,.25)}
+    .spacer{flex:1}
+
+    .filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-top:14px}
+    .input, select, button{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text)}
+    .input::placeholder{color:#64748b}
+    button.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
+    button.ghost{background:transparent;color:var(--muted)}
+    .row{display:flex;gap:12px;align-items:center}
+
+    .kpis{display:grid;gap:14px;margin-top:16px}
+    @media(min-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}}
+    .kpi{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+    .kpi .icon{width:44px;height:44px;border-radius:12px;display:grid;place-items:center}
+    .kpi h3{margin:0;font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+    .kpi .val{font-size:28px;font-weight:800;margin-top:4px}
+    .i-green{background:rgba(34,197,94,.12);color:#34d399}
+    .i-blue {background:rgba(59,130,246,.10);color:#60a5fa}
+    .i-red  {background:rgba(239,68,68,.10);color:#f87171}
+
+    .section{display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px}
+    .section h2{margin:0;font-size:18px}
+
+    .grid{display:grid;gap:14px}
+    @media(min-width:900px){.grid{grid-template-columns:repeat(3,1fr)}}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
+    .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+    .prefixo{font-weight:800;font-size:18px}
+    .chip{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--chip);border:1px solid var(--border)}
+    .chip.sb{color:#34d399}
+    .chip.ms{color:#60a5fa}
+    .chip.mt{color:#f87171}
+    .muted{color:var(--muted);font-size:12px}
+    .meta{display:flex;gap:10px;flex-wrap:wrap;color:#cbd5e1;font-size:13px;margin-top:8px}
+
+    #chart_div{height:320px}
+    #pie_div{height:260px}
+    #pareto_div{height:360px}
+    .foot{margin:28px 0;color:#64748b;font-size:12px;text-align:center}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="wrap row">
+      <div class="brand"><span class="dot"></span> Disponibilidade da Frota</div>
+      <div class="spacer"></div>
+      <a class="muted" href="#" id="btnRefresh" title="Atualizar">
+        <span class="material-symbols-rounded">refresh</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- Filtros (lista/KPIs) -->
+    <div class="filters">
+      <div class="row" style="flex:1;flex-wrap:wrap">
+        <label>Data <input class="input" type="date" id="fData"></label>
+        <label>Status
+          <select id="fStatus">
+            <option value="">Todos</option>
+            <option value="STAND BY">STAND BY</option>
+            <option value="MISSÃO">MISSÃO</option>
+            <option value="MNT">MNT</option>
+          </select>
+        </label>
+        <label>Base <input class="input" id="fBase" placeholder="Ex.: BASE MALBORO"></label>
+        <label>Buscar <input class="input" id="fBusca" placeholder="Prefixo, CMTE, Mecânico..."></label>
+      </div>
+      <div class="row">
+        <button class="ghost" id="btnHoje"><span class="material-symbols-rounded">calendar_month</span>&nbsp;Hoje</button>
+        <button class="primary" id="btnFiltrar"><span class="material-symbols-rounded">tune</span>&nbsp;Aplicar</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi"><div class="icon i-green">✓</div><div><h3>Disponíveis</h3><div class="val" id="kDisp">—</div></div></div>
+      <div class="kpi"><div class="icon i-blue">✈</div><div><h3>Em Missão</h3><div class="val" id="kMissao">—</div></div></div>
+      <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
+    </div>
+
+    <!-- Lista -->
+    <div class="section"><h2>Programação</h2></div>
+    <div id="lista" class="grid"></div>
+
+    <!-- Linha -->
+    <div class="section">
+      <h2>Disponíveis x Indisponíveis</h2>
+      <div class="row">
+        <label>Período
+          <select id="rangeSel">
+            <option value="15d">15 dias</option>
+            <option value="30d" selected>30 dias</option>
+            <option value="60d">60 dias</option>
+            <option value="90d">90 dias</option>
+            <option value="180d">180 dias</option>
+            <option value="12m">12 meses</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div id="chart_div"></div>
+
+    <!-- Pizza -->
+    <div class="section">
+      <h2>Status do dia</h2>
+      <div class="muted" id="pie_date_hint"></div>
+    </div>
+    <div id="pie_div"></div>
+
+    <!-- Pareto -->
+    <div class="section">
+      <h2>Pareto • Motivos de Manutenção</h2>
+      <div class="row">
+        <label>Período
+          <select id="paretoRangeSel">
+            <option value="15d">15 dias</option>
+            <option value="30d" selected>30 dias</option>
+            <option value="60d">60 dias</option>
+            <option value="90d">90 dias</option>
+            <option value="180d">180 dias</option>
+            <option value="12m">12 meses</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div id="pareto_div"></div>
+
+    <div class="foot">Atualiza a partir da sua planilha (Apps Script como API) • Visual público</div>
+  </div>
+
+  <script>
+    // ======= CONFIGURE AQUI =======
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxR-jNDUq5pfBU08591TXShlbTyfXYcmT5KSQGJoDKsoNEqZLEG5g7KIHtMyng0Wg3X/exec'; 
+    // ==============================
+
+    // Helper genérico de API
+    async function api(fn, params = {}) {
+      const qs = new URLSearchParams({ fn, ...params }).toString();
+      const res = await fetch(`${API_URL}?${qs}`, { method: 'GET' });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'Erro na API');
+      return json.data;
+    }
+
+    const $ = s => document.querySelector(s);
+
+    function chip(status){
+      const S = String(status||'').toUpperCase();
+      if (S==='STAND BY') return '<span class="chip sb">STAND BY</span>';
+      if (S==='MISSÃO' || S==='MISSAO') return '<span class="chip ms">MISSÃO</span>';
+      if (S==='MNT') return '<span class="chip mt">MNT</span>';
+      return `<span class="chip">${status||'-'}</span>`;
+    }
+
+    function renderLista(rows){
+      const el = $('#lista');
+      if (!rows.length){ el.innerHTML = '<div class="muted">Nenhum registro.</div>'; return; }
+      el.innerHTML = rows.map(r=>`
+        <div class="card">
+          <div class="title">
+            <div class="prefixo">${r.Prefixo||'-'}</div>
+            ${chip(r.Status)}
+          </div>
+          <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
+          <div class="meta">
+            <div><b>Missão:</b> ${r.Missao||'-'}</div>
+            <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
+            <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
+            ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
+          </div>
+          ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
+        </div>
+      `).join('');
+    }
+
+    function setKpis(k){
+      $('#kDisp').textContent = k.disponiveis ?? '0';
+      $('#kMissao').textContent = k.missao ?? '0';
+      $('#kMnt').textContent   = k.manutencao ?? '0';
+    }
+
+    // ====== Google Charts ======
+    google.charts.load('current', {'packages':['corechart']});
+
+    // Linha
+    function drawLine(rows, isMonthly){
+      const dt = new google.visualization.DataTable();
+      dt.addColumn('string', isMonthly ? 'Mês' : 'Data');
+      dt.addColumn('number','Disponível');
+      dt.addColumn('number','Indisponível');
+      (isMonthly ? rows.map(r=>[String(r.Mes), +r['Disponível']||0, +r['Indisponível']||0])
+                 : rows.map(r=>[String(r.Data), +r['Disponível']||0, +r['Indisponível']||0])
+      ).forEach(row=>dt.addRow(row));
+      const options = {
+        legend:{ position:'bottom', textStyle:{ color:'#cbd5e1' } },
+        backgroundColor:'transparent',
+        hAxis:{ textStyle:{ color:'#94a3b8' } },
+        vAxis:{ textStyle:{ color:'#94a3b8' }, gridlines:{ color:'#1f2937' } },
+        chartArea:{ left:40, top:10, right:10, height:240 },
+        height:320,
+        curveType:'function',
+        series:{ 0:{ color:'#22c55e', lineWidth:3 }, 1:{ color:'#ef4444', lineWidth:3 } }
+      };
+      new google.visualization.LineChart($('#chart_div')).draw(dt, options);
+    }
+    async function carregarGrafico(){
+      const range = $('#rangeSel').value || '30d';
+      const rows = await api('series', { range });
+      const isMonthly = (range === '12m');
+      google.charts.setOnLoadCallback(()=> drawLine(rows, isMonthly));
+    }
+
+    // Pizza
+    function drawPie(rows, date){
+      const dt = new google.visualization.DataTable();
+      dt.addColumn('string','Status'); dt.addColumn('number','Qtde');
+      rows.forEach(r=> dt.addRow([r.Status, Number(r.Qtde||0)]));
+      $('#pie_date_hint').textContent = 'Dia: '+date;
+      const options = {
+        pieHole:0.55, legend:{position:'bottom', textStyle:{color:'#cbd5e1'}},
+        backgroundColor:'transparent',
+        chartArea:{ left:10, top:10, right:10, height:180 },
+        slices:{
+          0:{color:'#22c55e'}, // Disponível
+          1:{color:'#3b82f6'}, // Missão
+          2:{color:'#ef4444'}  // Manutenção
+        }
+      };
+      new google.visualization.PieChart($('#pie_div')).draw(dt, options);
+    }
+    async function carregarPizza(){
+      const date = $('#fData').value || new Date().toISOString().slice(0,10);
+      const rows = await api('pie', { date });
+      google.charts.setOnLoadCallback(()=> drawPie(rows, date));
+    }
+
+    // Pareto (barras horizontais simples)
+    function drawPareto(rows){
+      const dt = new google.visualization.DataTable();
+      dt.addColumn('string','Motivo');
+      dt.addColumn('number','Qtde');
+      dt.addColumn({type:'string', role:'annotation'});
+      rows.forEach(r=> dt.addRow([r.Motivo, Number(r.Qtde||0), String(r.Qtde||0)]));
+      const options = {
+        backgroundColor:'transparent',
+        legend:'none',
+        annotations:{ textStyle:{ color:'#e5e7eb', bold:true }},
+        hAxis:{ textStyle:{ color:'#94a3b8' }, gridlines:{ color:'#1f2937' }, minValue:0 },
+        vAxis:{ textStyle:{ color:'#94a3b8' } },
+        colors:['#ef4444'],
+        chartArea:{ left:120, top:10, right:20, height:260 },
+        height:360
+      };
+      new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
+    }
+    async function carregarPareto(){
+      const range = $('#paretoRangeSel').value || '30d';
+      const rows = await api('pareto', { range });
+      google.charts.setOnLoadCallback(()=> drawPareto(rows));
+    }
+
+    // ====== Lista & KPIs ======
+    async function carregarListaEKpis(){
+      const date = $('#fData').value || '';
+      const base = $('#fBase').value || '';
+      const status = $('#fStatus').value || '';
+      const search = $('#fBusca').value || '';
+      const [rows, k] = await Promise.all([
+        api('list', { date, base, status, search }),
+        api('kpis', { date })
+      ]);
+      renderLista(rows);
+      setKpis(k);
+    }
+
+    // Eventos UI
+    $('#btnFiltrar').addEventListener('click', ()=>{ carregarListaEKpis(); carregarPizza(); });
+    $('#btnHoje').addEventListener('click', ()=>{
+      const d = new Date(); $('#fData').value = d.toISOString().slice(0,10);
+      carregarListaEKpis(); carregarPizza();
+    });
+    $('#btnRefresh').addEventListener('click', ()=>{
+      carregarListaEKpis(); carregarGrafico(); carregarPizza(); carregarPareto();
+    });
+    $('#rangeSel').addEventListener('change', carregarGrafico);
+    $('#paretoRangeSel').addEventListener('change', carregarPareto);
+
+    // Inicial
+    (async function init(){
+      // opcional: setar hoje no campo Data
+      $('#fData').value = new Date().toISOString().slice(0,10);
+      await carregarListaEKpis();
+      await carregarGrafico();
+      await carregarPizza();
+      await carregarPareto();
+    })();
+  </script>
+</body>
+</html>
