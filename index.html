@@ -332,23 +332,26 @@
       const prefixo = $('#prefChart').value || '';
       const pieBase = $('#pieBase').value || '';
 
-      const reqs = [
-        api('list',   { date, status, search }),
-        api('kpis',   { date }),
-        api('pie',    { date, base: pieBase }),                 // pizza com filtro de base
-        api('series', { range, base, prefixos: prefixo }),      // colunas com base/prefixo
-        api('pareto', { range })
-      ];
+      const qs = { fn:'dashboard', date, status, search, range, base, prefixos: prefixo, pieBase };
+      const url = API_URL + '?' + new URLSearchParams(qs).toString();
+      const res = await fetch(url).then(r=>r.json());
+      const data = res.data;
 
-      const [listRes, kpisRes, pieRes, seriesRes, paretoRes] = await Promise.all(reqs);
-      renderLista(listRes);
-      setKpis(kpisRes);
-      google.charts.setOnLoadCallback(()=> {
-        drawPie(pieRes, date);
-        drawColumns(seriesRes, range==='12m');
-        drawPareto(paretoRes);
-      });
-    }
+  // preenche lookups apenas na 1ª vez (se quiser, guarde um flag)
+  if ($('#baseChart').options.length<=1){
+    $('#baseChart').innerHTML = '<option value="">Todas</option>' + data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
+    $('#prefChart').innerHTML = '<option value="">Todas</option>' + data.lookups.prefixos.map(v=>`<option>${v}</option>`).join('');
+    $('#pieBase').innerHTML   = '<option value="">Todas</option>' + data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
+  }
+
+  renderLista(data.list);
+  setKpis(data.kpis);
+  google.charts.setOnLoadCallback(()=> {
+    drawPie(data.pie, date);
+    drawColumns(data.series, range==='12m');
+    drawPareto(data.pareto);
+  });
+}
 
     // Eventos UI
     $('#btnFiltrar').addEventListener('click', refreshAll);
