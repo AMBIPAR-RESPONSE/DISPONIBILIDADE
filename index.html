@@ -28,10 +28,10 @@
     .filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-top:14px}
     .input, select, button{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text)}
     .input::placeholder{color:#64748b}
-    select[multiple]{height:120px;padding:6px 10px}
     button.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
     button.ghost{background:transparent;color:var(--muted)}
     .row{display:flex;gap:12px;align-items:center}
+    label{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:12px}
 
     .kpis{display:grid;gap:14px;margin-top:16px}
     @media(min-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}}
@@ -63,6 +63,18 @@
     #pie_div{height:260px}
     #pareto_div{height:360px}
     .foot{margin:28px 0;color:#64748b;font-size:12px;text-align:center}
+
+    /* MultiSelect (checkbox) */
+    .ms{position:relative;min-width:220px}
+    .ms-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:220px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text);cursor:pointer}
+    .ms-panel{position:absolute;top:44px;left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;min-width:280px;max-height:280px;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.35);display:none;z-index:50}
+    .ms.open .ms-panel{display:block}
+    .ms-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
+    .ms-row:last-child{border-bottom:0}
+    .ms-row input{width:16px;height:16px}
+    .ms-title{font-size:12px;color:#9aa4b2;padding:8px 12px 0}
+    .ms-footer{display:flex;gap:8px;justify-content:flex-end;padding:10px}
+    .ms-footer button{height:34px;padding:0 12px}
   </style>
 </head>
 <body>
@@ -120,7 +132,7 @@
     <!-- Gráfico barras -->
     <div class="section">
       <h2>Disponíveis x Indisponíveis</h2>
-      <div class="row" style="gap:12px; align-items:center">
+      <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
         <label>Base
           <select id="baseChart" style="min-width:180px">
             <option value="">Todas</option>
@@ -149,7 +161,7 @@
     <!-- Pizza -->
     <div class="section">
       <h2>Status do dia</h2>
-      <div class="row" style="gap:12px; align-items:center">
+      <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
         <div class="muted" id="pie_date_hint"></div>
         <div style="flex:1"></div>
         <label>Base
@@ -161,10 +173,10 @@
     </div>
     <div id="pie_div"></div>
 
-    <!-- Pareto (com filtros múltiplos) -->
+    <!-- Pareto -->
     <div class="section">
       <h2>Pareto • Motivos de Manutenção</h2>
-      <div class="row" style="gap:14px; align-items:flex-start; flex-wrap:wrap">
+      <div class="row" style="gap:14px; align-items:center; flex-wrap:wrap">
         <label>Período
           <select id="paretoRangeSel">
             <option value="15d">15 dias</option>
@@ -175,12 +187,35 @@
             <option value="12m">12 meses</option>
           </select>
         </label>
-        <label>Bases (múltiplas)
-          <select id="paretoBases" multiple style="min-width:220px"></select>
-        </label>
-        <label>Aeronaves (múltiplas)
-          <select id="paretoPrefixos" multiple style="min-width:220px"></select>
-        </label>
+
+        <!-- MultiSelect Bases -->
+        <div class="ms" id="msBases">
+          <div class="ms-btn"><span>Todos as Bases</span><span class="material-symbols-rounded" style="font-size:18px">expand_more</span></div>
+          <div class="ms-panel">
+            <div class="ms-title">Bases</div>
+            <div class="ms-row"><input type="checkbox" id="msBases_all"><label for="msBases_all">Selecionar todas</label></div>
+            <div id="msBases_list"></div>
+            <div class="ms-footer">
+              <button class="ghost" type="button" id="msBases_clear">Limpar</button>
+              <button class="primary" type="button" id="msBases_apply">Aplicar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MultiSelect Prefixos -->
+        <div class="ms" id="msPrefixos">
+          <div class="ms-btn"><span>Todas as Aeronaves</span><span class="material-symbols-rounded" style="font-size:18px">expand_more</span></div>
+          <div class="ms-panel">
+            <div class="ms-title">Aeronaves</div>
+            <div class="ms-row"><input type="checkbox" id="msPrefixos_all"><label for="msPrefixos_all">Selecionar todas</label></div>
+            <div id="msPrefixos_list"></div>
+            <div class="ms-footer">
+              <button class="ghost" type="button" id="msPrefixos_clear">Limpar</button>
+              <button class="primary" type="button" id="msPrefixos_apply">Aplicar</button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
     <div id="pareto_div"></div>
@@ -189,13 +224,74 @@
   </div>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzuPkCWigr-hm6qTn6xe3OFndDwKHhfypAbXmlj5H1VkU15Fzrq5nnJN42qsnQcz73D/exec';
+    const API_URL = 'https://script.google.com/macros/s/COLE_SUA_URL_EXEC_AQUI/exec';
     google.charts.load('current', {'packages':['corechart']});
     const $ = s => document.querySelector(s);
     const debounce = (fn,ms=350)=>{ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);}};
 
-    const multiSelToCSV = sel => [...sel.selectedOptions].map(o=>o.value).filter(Boolean).join(',');
+    /************** MultiSelect helper **************/
+    function createMultiSelect(rootId, placeholder){
+      const root = document.getElementById(rootId);
+      const btn  = root.querySelector('.ms-btn');
+      const panel= root.querySelector('.ms-panel');
+      const all  = root.querySelector(`#${rootId}_all`);
+      const list = root.querySelector(`#${rootId}_list`);
+      const apply= root.querySelector(`#${rootId}_apply`);
+      const clear= root.querySelector(`#${rootId}_clear`);
 
+      let items = []; // [{value,label}]
+      let selected = new Set();
+
+      const updateBtn = ()=>{
+        if (selected.size===0) btn.querySelector('span').textContent = placeholder;
+        else if (selected.size===items.length) btn.querySelector('span').textContent = 'Todos';
+        else if (selected.size===1) btn.querySelector('span').textContent = [...selected][0];
+        else btn.querySelector('span').textContent = `${selected.size} selecionadas`;
+      };
+
+      const render = ()=>{
+        list.innerHTML = items.map(v=>`
+          <div class="ms-row">
+            <input type="checkbox" id="${rootId}_${v}" value="${v}" ${selected.has(v)?'checked':''}>
+            <label for="${rootId}_${v}">${v}</label>
+          </div>`).join('');
+        all.checked = selected.size===items.length && items.length>0;
+        updateBtn();
+      };
+
+      btn.addEventListener('click', (e)=>{ e.stopPropagation(); root.classList.toggle('open'); });
+      document.addEventListener('click', ()=> root.classList.remove('open'));
+      panel.addEventListener('click', (e)=> e.stopPropagation());
+
+      all.addEventListener('change', ()=>{
+        if (all.checked){ selected = new Set(items); }
+        else { selected.clear(); }
+        render();
+      });
+
+      list.addEventListener('change', (e)=>{
+        if (e.target && e.target.type==='checkbox'){
+          const v=e.target.value;
+          if (e.target.checked) selected.add(v); else selected.delete(v);
+          all.checked = selected.size===items.length;
+          updateBtn();
+        }
+      });
+
+      clear.addEventListener('click', ()=>{ selected.clear(); all.checked=false; render(); });
+      apply.addEventListener('click', ()=>{ root.classList.remove('open'); refreshPareto(); });
+
+      return {
+        setItems(arr){ items=[...arr]; selected.clear(); render(); },
+        values(){ return [...selected]; },
+        setSelectedAll(){ selected=new Set(items); render(); }
+      };
+    }
+
+    const msBases    = createMultiSelect('msBases','Todas as Bases');
+    const msPrefixos = createMultiSelect('msPrefixos','Todas as Aeronaves');
+
+    /************** UI helpers **************/
     function chip(status){
       const S = String(status||'').toUpperCase();
       if (S==='STAND BY') return '<span class="chip sb">STAND BY</span>';
@@ -203,7 +299,6 @@
       if (S==='MNT') return '<span class="chip mt">MNT</span>';
       return `<span class="chip">${status||'-'}</span>`;
     }
-
     function renderListaGrouped(rows){
       const baseSel = $('#progBase').value || '';
       const norm = s => String(s||'').toLowerCase();
@@ -238,6 +333,7 @@
       $('#lista').innerHTML = col('STAND BY', SB) + col('EM MISSÃO', MS) + col('EM MANUTENÇÃO', MNT);
     }
 
+    /* Charts */
     function drawColumns(rows, isMonthly){
       const dt = new google.visualization.DataTable();
       dt.addColumn('string', isMonthly ? 'Mês' : 'Data');
@@ -290,6 +386,7 @@
       new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
     }
 
+    /* Dashboard loader */
     async function refreshAll(){
       const date    = $('#fData').value || '';
       const status  = $('#fStatus').value || '';
@@ -298,8 +395,9 @@
       const base    = $('#baseChart').value || '';
       const prefixo = $('#prefChart').value || '';
       const pieBase = $('#pieBase').value || '';
-      const paretoBasesCSV    = multiSelToCSV($('#paretoBases'));
-      const paretoPrefixosCSV = multiSelToCSV($('#paretoPrefixos'));
+
+      const paretoBasesCSV    = msBases.values().join(',');
+      const paretoPrefixosCSV = msPrefixos.values().join(',');
 
       const qs = {
         fn:'dashboard', date, status, search, range,
@@ -310,7 +408,7 @@
       const res = await fetch(url).then(r=>r.json());
       const data = res.data;
 
-      // lookups (1ª vez)
+      // Lookups 1ª vez
       if ($('#baseChart').options.length<=1){
         const basesOpt   = '<option value="">Todas</option>' + data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
         const prefOpt    = '<option value="">Todas</option>' + data.lookups.prefixos.map(v=>`<option>${v}</option>`).join('');
@@ -319,9 +417,8 @@
         $('#progBase').innerHTML  = basesOpt;
         $('#prefChart').innerHTML = prefOpt;
 
-        // Pareto múltiplo: preencher sem "Todas"
-        $('#paretoBases').innerHTML    = data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
-        $('#paretoPrefixos').innerHTML = data.lookups.prefixos.map(v=>`<option>${v}</option>`).join('');
+        msBases.setItems(data.lookups.bases);
+        msPrefixos.setItems(data.lookups.prefixos);
       }
 
       renderListaGrouped(data.list);
@@ -335,8 +432,9 @@
         drawPareto(data.pareto);
       });
     }
+    const refreshPareto = debounce(refreshAll, 150);
 
-    // Eventos
+    /* Eventos */
     $('#btnFiltrar').addEventListener('click', refreshAll);
     $('#btnHoje').addEventListener('click', ()=>{ $('#fData').value = new Date().toISOString().slice(0,10); refreshAll(); });
     $('#btnRefresh').addEventListener('click', refreshAll);
@@ -347,10 +445,7 @@
     $('#pieBase').addEventListener('change', refreshAll);
     $('#progBase').addEventListener('change', refreshAll);
 
-    $('#paretoRangeSel').addEventListener('change', refreshAll);
-    $('#paretoBases').addEventListener('change', refreshAll);
-    $('#paretoPrefixos').addEventListener('change', refreshAll);
-
+    $('#paretoRangeSel').addEventListener('change', refreshPareto);
     $('#fBusca').addEventListener('input', debounce(refreshAll, 400));
     $('#fStatus').addEventListener('change', refreshAll);
 
