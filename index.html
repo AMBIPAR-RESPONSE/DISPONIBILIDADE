@@ -5,11 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Disponibilidade da Frota</title>
 
-  <!-- Fontes & Ícones -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet" />
-
-  <!-- Google Charts -->
   <script src="https://www.gstatic.com/charts/loader.js"></script>
 
   <style>
@@ -31,6 +28,7 @@
     .filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-top:14px}
     .input, select, button{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text)}
     .input::placeholder{color:#64748b}
+    select[multiple]{height:120px;padding:6px 10px}
     button.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
     button.ghost{background:transparent;color:var(--muted)}
     .row{display:flex;gap:12px;align-items:center}
@@ -48,22 +46,18 @@
     .section{display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px}
     .section h2{margin:0;font-size:18px}
 
-    .grid{display:grid;gap:14px}
     .grid-3{display:grid;gap:14px}
     @media(min-width:900px){.grid-3{grid-template-columns:repeat(3,1fr)}}
     .col{display:flex;flex-direction:column;gap:14px}
+    .colTitle{display:flex;align-items:center;justify-content:space-between;color:#cbd5e1;margin-bottom:4px;font-weight:700;letter-spacing:.2px}
 
     .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
     .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
     .prefixo{font-weight:800;font-size:18px}
     .chip{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--chip);border:1px solid var(--border)}
-    .chip.sb{color:#34d399}
-    .chip.ms{color:#60a5fa}
-    .chip.mt{color:#f87171}
+    .chip.sb{color:#34d399}.chip.ms{color:#60a5fa}.chip.mt{color:#f87171}
     .muted{color:var(--muted);font-size:12px}
     .meta{display:flex;gap:10px;flex-wrap:wrap;color:#cbd5e1;font-size:13px;margin-top:8px}
-
-    .colTitle{display:flex;align-items:center;justify-content:space-between;color:#cbd5e1;margin-bottom:4px;font-weight:700;letter-spacing:.2px}
 
     #chart_div{height:360px}
     #pie_div{height:260px}
@@ -83,7 +77,7 @@
   </div>
 
   <div class="wrap">
-    <!-- Filtros (lista/KPIs) -->
+    <!-- Filtros globais -->
     <div class="filters">
       <div class="row" style="flex:1;flex-wrap:wrap">
         <label>Data <input class="input" type="date" id="fData"></label>
@@ -110,7 +104,7 @@
       <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
     </div>
 
-    <!-- Programação (agora com filtro e 3 colunas) -->
+    <!-- Programação agrupada -->
     <div class="section">
       <h2>Programação</h2>
       <div class="row">
@@ -121,29 +115,23 @@
         </label>
       </div>
     </div>
-    <div id="lista" class="grid-3">
-      <!-- 3 colunas geradas via JS -->
-    </div>
+    <div id="lista" class="grid-3"></div>
 
-    <!-- Gráfico (colunas) -->
+    <!-- Gráfico barras -->
     <div class="section">
       <h2>Disponíveis x Indisponíveis</h2>
-
       <div class="row" style="gap:12px; align-items:center">
         <label>Base
           <select id="baseChart" style="min-width:180px">
             <option value="">Todas</option>
           </select>
         </label>
-
         <label>Aeronave
           <select id="prefChart" style="min-width:160px">
             <option value="">Todas</option>
           </select>
         </label>
-
         <div style="flex:1"></div>
-
         <label>Período
           <select id="rangeSel">
             <option value="15d">15 dias</option>
@@ -173,10 +161,10 @@
     </div>
     <div id="pie_div"></div>
 
-    <!-- Pareto -->
+    <!-- Pareto (com filtros múltiplos) -->
     <div class="section">
       <h2>Pareto • Motivos de Manutenção</h2>
-      <div class="row">
+      <div class="row" style="gap:14px; align-items:flex-start; flex-wrap:wrap">
         <label>Período
           <select id="paretoRangeSel">
             <option value="15d">15 dias</option>
@@ -187,6 +175,12 @@
             <option value="12m">12 meses</option>
           </select>
         </label>
+        <label>Bases (múltiplas)
+          <select id="paretoBases" multiple style="min-width:220px"></select>
+        </label>
+        <label>Aeronaves (múltiplas)
+          <select id="paretoPrefixos" multiple style="min-width:220px"></select>
+        </label>
       </div>
     </div>
     <div id="pareto_div"></div>
@@ -195,13 +189,12 @@
   </div>
 
   <script>
-    // ======= CONFIGURE AQUI =======
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzaUEbQjo_29AjcsWGBjYPo4q3CXVwDqo0Gdj5xbGTSREXyvCnSMZlPIOETjVmX0X1D/exec';
-    // ==============================
-
+    const API_URL = 'https://script.google.com/macros/s/COLE_SUA_URL_EXEC_AQUI/exec';
     google.charts.load('current', {'packages':['corechart']});
     const $ = s => document.querySelector(s);
     const debounce = (fn,ms=350)=>{ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);}};
+
+    const multiSelToCSV = sel => [...sel.selectedOptions].map(o=>o.value).filter(Boolean).join(',');
 
     function chip(status){
       const S = String(status||'').toUpperCase();
@@ -211,16 +204,10 @@
       return `<span class="chip">${status||'-'}</span>`;
     }
 
-    /* === LISTA AGRUPADA EM 3 COLUNAS === */
     function renderListaGrouped(rows){
-      // filtro de base específico da programação
       const baseSel = $('#progBase').value || '';
       const norm = s => String(s||'').toLowerCase();
-
-      const SB  = []; // STAND BY
-      const MS  = []; // MISSÃO
-      const MNT = []; // MNT
-
+      const SB=[], MS=[], MNT=[];
       for(const r of rows){
         if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
         const st = String(r.Status||'').toUpperCase();
@@ -241,32 +228,24 @@
           </div>`;
         if (st==='STAND BY') SB.push(card);
         else if (st==='MNT') MNT.push(card);
-        else MS.push(card); // MISSÃO (ou outros cairão aqui)
+        else MS.push(card);
       }
-
-      const col = (title, cls, arr) => `
+      const col = (title, arr) => `
         <div class="col">
           <div class="colTitle">${title} <span class="muted">(${arr.length})</span></div>
           ${arr.length ? arr.join('') : `<div class="muted">—</div>`}
         </div>`;
-
-      $('#lista').innerHTML = col('STAND BY', 'sb', SB) +
-                              col('EM MISSÃO', 'ms', MS) +
-                              col('EM MANUTENÇÃO', 'mt', MNT);
+      $('#lista').innerHTML = col('STAND BY', SB) + col('EM MISSÃO', MS) + col('EM MANUTENÇÃO', MNT);
     }
 
-    // ====== Gráficos ======
     function drawColumns(rows, isMonthly){
       const dt = new google.visualization.DataTable();
       dt.addColumn('string', isMonthly ? 'Mês' : 'Data');
       dt.addColumn('number','Disponível');
       dt.addColumn('number','Indisponível');
-
-      (isMonthly
-        ? rows.map(r=>[String(r.Mes), +r['Disponível']||0, +r['Indisponível']||0])
-        : rows.map(r=>[String(r.Data), +r['Disponível']||0, +r['Indisponível']||0])
+      (isMonthly ? rows.map(r=>[String(r.Mes), +r['Disponível']||0, +r['Indisponível']||0])
+                 : rows.map(r=>[String(r.Data), +r['Disponível']||0, +r['Indisponível']||0])
       ).forEach(r=>dt.addRow(r));
-
       const options = {
         legend:{ position:'bottom', textStyle:{ color:'#cbd5e1' } },
         backgroundColor:'transparent',
@@ -311,7 +290,6 @@
       new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
     }
 
-    // Chamada única ao backend (endpoint dashboard)
     async function refreshAll(){
       const date    = $('#fData').value || '';
       const status  = $('#fStatus').value || '';
@@ -320,8 +298,14 @@
       const base    = $('#baseChart').value || '';
       const prefixo = $('#prefChart').value || '';
       const pieBase = $('#pieBase').value || '';
+      const paretoBasesCSV    = multiSelToCSV($('#paretoBases'));
+      const paretoPrefixosCSV = multiSelToCSV($('#paretoPrefixos'));
 
-      const qs = { fn:'dashboard', date, status, search, range, base, prefixos: prefixo, pieBase };
+      const qs = {
+        fn:'dashboard', date, status, search, range,
+        base, prefixos: prefixo, pieBase,
+        paretoBases: paretoBasesCSV, paretoPrefixos: paretoPrefixosCSV
+      };
       const url = API_URL + '?' + new URLSearchParams(qs).toString();
       const res = await fetch(url).then(r=>r.json());
       const data = res.data;
@@ -334,10 +318,13 @@
         $('#pieBase').innerHTML   = basesOpt;
         $('#progBase').innerHTML  = basesOpt;
         $('#prefChart').innerHTML = prefOpt;
+
+        // Pareto múltiplo: preencher sem "Todas"
+        $('#paretoBases').innerHTML    = data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
+        $('#paretoPrefixos').innerHTML = data.lookups.prefixos.map(v=>`<option>${v}</option>`).join('');
       }
 
-      // renderizações
-      renderListaGrouped(data.list);        // agrupado em colunas
+      renderListaGrouped(data.list);
       $('#kDisp').textContent = data.kpis.disponiveis ?? '0';
       $('#kMissao').textContent = data.kpis.missao ?? '0';
       $('#kMnt').textContent   = data.kpis.manutencao ?? '0';
@@ -358,14 +345,15 @@
     $('#baseChart').addEventListener('change', refreshAll);
     $('#prefChart').addEventListener('change', refreshAll);
     $('#pieBase').addEventListener('change', refreshAll);
+    $('#progBase').addEventListener('change', refreshAll);
 
-    // Filtro de Programação (só re-renderiza a lista já carregada)
-    $('#progBase').addEventListener('change', ()=> refreshAll());
+    $('#paretoRangeSel').addEventListener('change', refreshAll);
+    $('#paretoBases').addEventListener('change', refreshAll);
+    $('#paretoPrefixos').addEventListener('change', refreshAll);
 
     $('#fBusca').addEventListener('input', debounce(refreshAll, 400));
     $('#fStatus').addEventListener('change', refreshAll);
 
-    // Inicial
     (async function init(){
       $('#fData').value = new Date().toISOString().slice(0,10);
       await refreshAll();
