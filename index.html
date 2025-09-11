@@ -239,7 +239,7 @@
       const apply= root.querySelector(`#${rootId}_apply`);
       const clear= root.querySelector(`#${rootId}_clear`);
 
-      let items = []; // [{value,label}]
+      let items = []; // valores simples
       let selected = new Set();
 
       const updateBtn = ()=>{
@@ -284,7 +284,13 @@
       return {
         setItems(arr){ items=[...arr]; selected.clear(); render(); },
         values(){ return [...selected]; },
-        setSelectedAll(){ selected=new Set(items); render(); }
+        setSelectedAll(){ selected=new Set(items); render(); },
+        // >>> novo: selecionar programaticamente (usado para sincronizar com os filtros do gráfico)
+        setSelected(arr){
+          const set = new Set(arr||[]);
+          selected = new Set(items.filter(v => set.has(v)));
+          render();
+        }
       };
     }
 
@@ -395,7 +401,7 @@
       const base    = $('#baseChart').value || '';
       const prefixo = $('#prefChart').value || '';
 
-      // >>> Pizza: dá prioridade à Base da Programação; se vazia, usa o seletor da própria pizza
+      // >>> Pizza: prioridade à Base da Programação; se vazia, usa o seletor da própria pizza
       const progBaseVal = $('#progBase').value || '';
       const pieBaseSel  = $('#pieBase').value || '';
       const pieBase     = progBaseVal !== '' ? progBaseVal : pieBaseSel;
@@ -443,10 +449,22 @@
     $('#btnHoje').addEventListener('click', ()=>{ $('#fData').value = new Date().toISOString().slice(0,10); refreshAll(); });
     $('#btnRefresh').addEventListener('click', refreshAll);
 
+    // >>> Sincronização: filtros do gráfico de barras -> filtros do Pareto
+    $('#baseChart').addEventListener('change', ()=>{
+      const v = $('#baseChart').value;
+      // seleciona a base no multiselect do Pareto (ou limpa = todas)
+      msBases.setSelected(v ? [v] : []);
+      refreshAll();
+    });
+    $('#prefChart').addEventListener('change', ()=>{
+      const v = $('#prefChart').value;
+      msPrefixos.setSelected(v ? [v] : []);
+      refreshAll();
+    });
+
     $('#rangeSel').addEventListener('change', refreshAll);
-    $('#baseChart').addEventListener('change', refreshAll);
-    $('#prefChart').addEventListener('change', refreshAll);
     $('#pieBase').addEventListener('change', refreshAll);
+
     // Quando a base da programação muda, sincroniza visualmente a pizza e recarrega
     $('#progBase').addEventListener('change', ()=>{
       $('#pieBase').value = $('#progBase').value || '';
