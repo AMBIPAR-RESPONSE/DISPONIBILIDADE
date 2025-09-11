@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Disponibilidade da Frota</title>
 
+  <!-- Fontes & Ícones -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet" />
+  <!-- Google Charts -->
   <script src="https://www.gstatic.com/charts/loader.js"></script>
 
   <style>
@@ -31,7 +33,6 @@
     button.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
     button.ghost{background:transparent;color:var(--muted)}
     .row{display:flex;gap:12px;align-items:center}
-    label{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:12px}
 
     .kpis{display:grid;gap:14px;margin-top:16px}
     @media(min-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}}
@@ -46,37 +47,33 @@
     .section{display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px}
     .section h2{margin:0;font-size:18px}
 
-    .grid-3{display:grid;gap:14px}
-    @media(min-width:900px){.grid-3{grid-template-columns:repeat(3,1fr)}}
-    .col{display:flex;flex-direction:column;gap:14px}
-    .colTitle{display:flex;align-items:center;justify-content:space-between;color:#cbd5e1;margin-bottom:4px;font-weight:700;letter-spacing:.2px}
-
+    .grid{display:grid;gap:14px}
+    @media(min-width:1000px){
+      .prog-grid{grid-template-columns:repeat(3,1fr)}
+    }
     .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
     .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
     .prefixo{font-weight:800;font-size:18px}
     .chip{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--chip);border:1px solid var(--border)}
-    .chip.sb{color:#34d399}.chip.ms{color:#60a5fa}.chip.mt{color:#f87171}
+    .chip.sb{color:#34d399}
+    .chip.ms{color:#60a5fa}
+    .chip.mt{color:#f87171}
     .muted{color:var(--muted);font-size:12px}
     .meta{display:flex;gap:10px;flex-wrap:wrap;color:#cbd5e1;font-size:13px;margin-top:8px}
 
-    #chart_div{height:360px}
-    #pie_div{height:260px}
+    /* charts */
+    #pie_div{height:300px}
+    #chart_div{height:340px}
     #pareto_div{height:360px}
+
     .foot{margin:28px 0;color:#64748b;font-size:12px;text-align:center}
 
-    /* MultiSelect (checkbox) */
-    .ms{position:relative;min-width:220px}
-    .ms-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:220px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text);cursor:pointer}
-    .ms-panel{position:absolute;top:44px;left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;min-width:280px;max-height:280px;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.35);display:none;z-index:50}
-    .ms.open .ms-panel{display:block}
-    .ms-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
-    .ms-row:last-child{border-bottom:0}
-    .ms-row input{width:16px;height:16px}
-    .ms-title{font-size:12px;color:#9aa4b2;padding:8px 12px 0}
-    .ms-footer{display:flex;gap:8px;justify-content:flex-end;padding:10px}
-    .ms-footer button{height:34px;padding:0 12px}
+    /* pequenas badges de contagem por coluna */
+    .col-head{display:flex;align-items:center;gap:10px;margin:6px 0 10px}
+    .pill{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:#0b1220;color:#9ca3af}
   </style>
 </head>
+
 <body>
   <div class="topbar">
     <div class="wrap row">
@@ -89,10 +86,11 @@
   </div>
 
   <div class="wrap">
-    <!-- Filtros globais -->
+    <!-- Filtros (Programação + KPIs) -->
     <div class="filters">
       <div class="row" style="flex:1;flex-wrap:wrap">
         <label>Data <input class="input" type="date" id="fData"></label>
+
         <label>Status
           <select id="fStatus">
             <option value="">Todos</option>
@@ -101,6 +99,14 @@
             <option value="MNT">MNT</option>
           </select>
         </label>
+
+        <label>Base
+          <!-- ESTA BASE CONTROLA A PIZZA -->
+          <select id="progBaseSel">
+            <option value="">Todas</option>
+          </select>
+        </label>
+
         <label>Buscar <input class="input" id="fBusca" placeholder="Prefixo, CMTE, Mecânico..."></label>
       </div>
       <div class="row">
@@ -116,34 +122,27 @@
       <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
     </div>
 
-    <!-- Programação agrupada -->
+    <!-- ===================== PIZZA (AGORA PRIMEIRO) ===================== -->
     <div class="section">
-      <h2>Programação</h2>
-      <div class="row">
-        <label>Base
-          <select id="progBase" style="min-width:180px">
-            <option value="">Todas</option>
-          </select>
-        </label>
+      <h2>Status do dia</h2>
+      <div class="row" style="gap:16px">
+        <div class="muted" id="pie_date_hint"></div>
+        <div class="spacer"></div>
+        <div class="muted">Base da Programação controla este gráfico</div>
       </div>
     </div>
-    <div id="lista" class="grid-3"></div>
+    <div id="pie_div"></div>
 
-    <!-- Gráfico barras -->
+    <!-- ===================== BARRAS (DEPOIS) ===================== -->
     <div class="section">
       <h2>Disponíveis x Indisponíveis</h2>
-      <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
+      <div class="row">
         <label>Base
-          <select id="baseChart" style="min-width:180px">
-            <option value="">Todas</option>
-          </select>
+          <select id="barBaseSel"></select>
         </label>
         <label>Aeronave
-          <select id="prefChart" style="min-width:160px">
-            <option value="">Todas</option>
-          </select>
+          <select id="barPrefSel"></select>
         </label>
-        <div style="flex:1"></div>
         <label>Período
           <select id="rangeSel">
             <option value="15d">15 dias</option>
@@ -158,25 +157,37 @@
     </div>
     <div id="chart_div"></div>
 
-    <!-- Pizza -->
-    <div class="section">
-      <h2>Status do dia</h2>
-      <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
-        <div class="muted" id="pie_date_hint"></div>
-        <div style="flex:1"></div>
-        <label>Base
-          <select id="pieBase" style="min-width:180px">
-            <option value="">Todas</option>
+    <!-- ===================== PROGRAMAÇÃO (TRÊS COLUNAS) ===================== -->
+    <div class="section" style="margin-top:28px">
+      <h2>Programação</h2>
+      <div class="row">
+        <label class="muted">Base
+          <select id="progBaseDup" disabled>
+            <option>Todas</option>
           </select>
         </label>
       </div>
     </div>
-    <div id="pie_div"></div>
 
-    <!-- Pareto -->
+    <div class="grid prog-grid" id="progColumns">
+      <div>
+        <div class="col-head"><strong>STAND BY</strong><span class="pill" id="countSB">0</span></div>
+        <div id="colSB"></div>
+      </div>
+      <div>
+        <div class="col-head"><strong>EM MISSÃO</strong><span class="pill" id="countMS">0</span></div>
+        <div id="colMS"></div>
+      </div>
+      <div>
+        <div class="col-head"><strong>EM MANUTENÇÃO</strong><span class="pill" id="countMT">0</span></div>
+        <div id="colMT"></div>
+      </div>
+    </div>
+
+    <!-- ===================== PARETO ===================== -->
     <div class="section">
       <h2>Pareto • Motivos de Manutenção</h2>
-      <div class="row" style="gap:14px; align-items:center; flex-wrap:wrap">
+      <div class="row">
         <label>Período
           <select id="paretoRangeSel">
             <option value="15d">15 dias</option>
@@ -187,35 +198,12 @@
             <option value="12m">12 meses</option>
           </select>
         </label>
-
-        <!-- MultiSelect Bases -->
-        <div class="ms" id="msBases">
-          <div class="ms-btn"><span>Todos as Bases</span><span class="material-symbols-rounded" style="font-size:18px">expand_more</span></div>
-          <div class="ms-panel">
-            <div class="ms-title">Bases</div>
-            <div class="ms-row"><input type="checkbox" id="msBases_all"><label for="msBases_all">Selecionar todas</label></div>
-            <div id="msBases_list"></div>
-            <div class="ms-footer">
-              <button class="ghost" type="button" id="msBases_clear">Limpar</button>
-              <button class="primary" type="button" id="msBases_apply">Aplicar</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- MultiSelect Prefixos -->
-        <div class="ms" id="msPrefixos">
-          <div class="ms-btn"><span>Todas as Aeronaves</span><span class="material-symbols-rounded" style="font-size:18px">expand_more</span></div>
-          <div class="ms-panel">
-            <div class="ms-title">Aeronaves</div>
-            <div class="ms-row"><input type="checkbox" id="msPrefixos_all"><label for="msPrefixos_all">Selecionar todas</label></div>
-            <div id="msPrefixos_list"></div>
-            <div class="ms-footer">
-              <button class="ghost" type="button" id="msPrefixos_clear">Limpar</button>
-              <button class="primary" type="button" id="msPrefixos_apply">Aplicar</button>
-            </div>
-          </div>
-        </div>
-
+        <label>Bases
+          <select id="paretoBasesSel" multiple size="1"></select>
+        </label>
+        <label>Aeronaves
+          <select id="paretoPrefSel" multiple size="1"></select>
+        </label>
       </div>
     </div>
     <div id="pareto_div"></div>
@@ -224,74 +212,23 @@
   </div>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzuPkCWigr-hm6qTn6xe3OFndDwKHhfypAbXmlj5H1VkU15Fzrq5nnJN42qsnQcz73D/exec';
+    // ======= CONFIGURE AQUI =======
+    const API_URL = 'https://script.google.com/macros/library/d/1EycseqnF8M0d2Idibd81Vo4iprJbSkmYAHt7ualx7sNoJ1KTmtkczU-H/13';
+    // ==============================
+
     google.charts.load('current', {'packages':['corechart']});
     const $ = s => document.querySelector(s);
-    const debounce = (fn,ms=350)=>{ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);}};
 
-    /************** MultiSelect helper **************/
-    function createMultiSelect(rootId, placeholder){
-      const root = document.getElementById(rootId);
-      const btn  = root.querySelector('.ms-btn');
-      const panel= root.querySelector('.ms-panel');
-      const all  = root.querySelector(`#${rootId}_all`);
-      const list = root.querySelector(`#${rootId}_list`);
-      const apply= root.querySelector(`#${rootId}_apply`);
-      const clear= root.querySelector(`#${rootId}_clear`);
-
-      let items = []; // [{value,label}]
-      let selected = new Set();
-
-      const updateBtn = ()=>{
-        if (selected.size===0) btn.querySelector('span').textContent = placeholder;
-        else if (selected.size===items.length) btn.querySelector('span').textContent = 'Todos';
-        else if (selected.size===1) btn.querySelector('span').textContent = [...selected][0];
-        else btn.querySelector('span').textContent = `${selected.size} selecionadas`;
-      };
-
-      const render = ()=>{
-        list.innerHTML = items.map(v=>`
-          <div class="ms-row">
-            <input type="checkbox" id="${rootId}_${v}" value="${v}" ${selected.has(v)?'checked':''}>
-            <label for="${rootId}_${v}">${v}</label>
-          </div>`).join('');
-        all.checked = selected.size===items.length && items.length>0;
-        updateBtn();
-      };
-
-      btn.addEventListener('click', (e)=>{ e.stopPropagation(); root.classList.toggle('open'); });
-      document.addEventListener('click', ()=> root.classList.remove('open'));
-      panel.addEventListener('click', (e)=> e.stopPropagation());
-
-      all.addEventListener('change', ()=>{
-        if (all.checked){ selected = new Set(items); }
-        else { selected.clear(); }
-        render();
-      });
-
-      list.addEventListener('change', (e)=>{
-        if (e.target && e.target.type==='checkbox'){
-          const v=e.target.value;
-          if (e.target.checked) selected.add(v); else selected.delete(v);
-          all.checked = selected.size===items.length;
-          updateBtn();
-        }
-      });
-
-      clear.addEventListener('click', ()=>{ selected.clear(); all.checked=false; render(); });
-      apply.addEventListener('click', ()=>{ root.classList.remove('open'); refreshPareto(); });
-
-      return {
-        setItems(arr){ items=[...arr]; selected.clear(); render(); },
-        values(){ return [...selected]; },
-        setSelectedAll(){ selected=new Set(items); render(); }
-      };
+    // API helper
+    async function api(fn, params = {}) {
+      const qs = new URLSearchParams({ fn, ...params }).toString();
+      const res = await fetch(`${API_URL}?${qs}`, { method: 'GET' });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'Erro na API');
+      return json.data;
     }
 
-    const msBases    = createMultiSelect('msBases','Todas as Bases');
-    const msPrefixos = createMultiSelect('msPrefixos','Todas as Aeronaves');
-
-    /************** UI helpers **************/
+    // ====== RENDER LISTA / PROGRAMAÇÃO ======
     function chip(status){
       const S = String(status||'').toUpperCase();
       if (S==='STAND BY') return '<span class="chip sb">STAND BY</span>';
@@ -299,61 +236,63 @@
       if (S==='MNT') return '<span class="chip mt">MNT</span>';
       return `<span class="chip">${status||'-'}</span>`;
     }
-    function renderListaGrouped(rows){
-      const baseSel = $('#progBase').value || '';
-      const norm = s => String(s||'').toLowerCase();
-      const SB=[], MS=[], MNT=[];
-      for(const r of rows){
-        if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
-        const st = String(r.Status||'').toUpperCase();
-        const card = `
-          <div class="card">
-            <div class="title">
-              <div class="prefixo">${r.Prefixo||'-'}</div>
-              ${chip(r.Status)}
-            </div>
-            <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
-            <div class="meta">
-              <div><b>Missão:</b> ${r.Missao||'-'}</div>
-              <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
-              <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
-              ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
-            </div>
-            ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
-          </div>`;
-        if (st==='STAND BY') SB.push(card);
-        else if (st==='MNT') MNT.push(card);
-        else MS.push(card);
-      }
-      const col = (title, arr) => `
-        <div class="col">
-          <div class="colTitle">${title} <span class="muted">(${arr.length})</span></div>
-          ${arr.length ? arr.join('') : `<div class="muted">—</div>`}
-        </div>`;
-      $('#lista').innerHTML = col('STAND BY', SB) + col('EM MISSÃO', MS) + col('EM MANUTENÇÃO', MNT);
+
+    function renderProgramacao(rows){
+      // separa por status e filtra pela base de programação
+      const baseProg = ($('#progBaseSel') ? $('#progBaseSel').value : '') || '';
+      const norm = v => String(v||'').toLowerCase();
+      const f = baseProg ? rows.filter(r => norm(r.Base)===norm(baseProg)) : rows.slice();
+
+      const sb = f.filter(r => String(r.Status).toUpperCase()==='STAND BY');
+      const ms = f.filter(r => ['MISSÃO','MISSAO'].includes(String(r.Status).toUpperCase()));
+      const mt = f.filter(r => String(r.Status).toUpperCase()==='MNT');
+
+      $('#countSB').textContent = sb.length;
+      $('#countMS').textContent = ms.length;
+      $('#countMT').textContent = mt.length;
+
+      const card = r => `
+        <div class="card">
+          <div class="title">
+            <div class="prefixo">${r.Prefixo||'-'}</div>
+            ${chip(r.Status)}
+          </div>
+          <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
+          <div class="meta">
+            <div><b>Missão:</b> ${r.Missao||'-'}</div>
+            <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
+            <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
+            ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
+          </div>
+          ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
+        </div>
+      `;
+
+      $('#colSB').innerHTML = sb.map(card).join('') || '<div class="muted">—</div>';
+      $('#colMS').innerHTML = ms.map(card).join('') || '<div class="muted">—</div>';
+      $('#colMT').innerHTML = mt.map(card).join('') || '<div class="muted">—</div>';
     }
 
-    /* Charts */
-    function drawColumns(rows, isMonthly){
-      const dt = new google.visualization.DataTable();
-      dt.addColumn('string', isMonthly ? 'Mês' : 'Data');
-      dt.addColumn('number','Disponível');
-      dt.addColumn('number','Indisponível');
-      (isMonthly ? rows.map(r=>[String(r.Mes), +r['Disponível']||0, +r['Indisponível']||0])
-                 : rows.map(r=>[String(r.Data), +r['Disponível']||0, +r['Indisponível']||0])
-      ).forEach(r=>dt.addRow(r));
-      const options = {
-        legend:{ position:'bottom', textStyle:{ color:'#cbd5e1' } },
-        backgroundColor:'transparent',
-        hAxis:{ textStyle:{ color:'#94a3b8' } },
-        vAxis:{ textStyle:{ color:'#94a3b8' }, gridlines:{ color:'#1f2937' } },
-        chartArea:{ left:40, top:10, right:10, height:260 },
-        height:360,
-        isStacked:false,
-        series:{ 0:{ color:'#22c55e' }, 1:{ color:'#ef4444' } }
-      };
-      new google.visualization.ColumnChart($('#chart_div')).draw(dt, options);
+    function setKpis(k){
+      $('#kDisp').textContent = k.disponiveis ?? '0';
+      $('#kMissao').textContent = k.missao ?? '0';
+      $('#kMnt').textContent   = k.manutencao ?? '0';
     }
+
+    async function carregarListaEKpis(){
+      const date = $('#fData').value || '';
+      const status = $('#fStatus').value || '';
+      const search = $('#fBusca').value || '';
+
+      const data = await api('list', { date, status, search });
+      renderProgramacao(data);
+
+      const k = await api('kpis', { date });
+      setKpis(k);
+    }
+
+    // ====== CHARTS ======
+    // PIZZA (usa Base da Programação)
     function drawPie(rows, date){
       const dt = new google.visualization.DataTable();
       dt.addColumn('string','Status'); dt.addColumn('number','Qtde');
@@ -362,20 +301,61 @@
       const options = {
         pieHole:0.55, legend:{position:'bottom', textStyle:{color:'#cbd5e1'}},
         backgroundColor:'transparent',
-        chartArea:{ left:10, top:10, right:10, height:180 },
-        slices:{ 0:{color:'#22c55e'}, 1:{color:'#3b82f6'}, 2:{color:'#ef4444'} }
+        chartArea:{ left:10, top:10, right:10, height:220 },
+        slices:{
+          0:{color:'#22c55e'}, // Disponível
+          1:{color:'#3b82f6'}, // Missão
+          2:{color:'#ef4444'}  // Manutenção
+        }
       };
       new google.visualization.PieChart($('#pie_div')).draw(dt, options);
     }
-    function drawPareto(rows){
+    async function carregarPizza(){
+      const date = $('#fData').value || new Date().toISOString().slice(0,10);
+      const baseProg = ($('#progBaseSel') ? $('#progBaseSel').value : '') || '';
+      const rows = await api('pie', { date, base: baseProg });
+      google.charts.setOnLoadCallback(()=> drawPie(rows, date));
+    }
+
+    // BARRAS
+    function drawBars(rows, isMonthly){
       const dt = new google.visualization.DataTable();
-      dt.addColumn('string','Motivo');
-      dt.addColumn('number','Qtde');
-      dt.addColumn({type:'string', role:'annotation'});
-      rows.forEach(r=> dt.addRow([r.Motivo, Number(r.Qtde||0), String(r.Qtde||0)]));
+      dt.addColumn('string', isMonthly ? 'Mês' : 'Data');
+      dt.addColumn('number','Disponível');
+      dt.addColumn('number','Indisponível');
+
+      (isMonthly ? rows.map(r=>[String(r.Mes), +r['Disponível']||0, +r['Indisponível']||0])
+                 : rows.map(r=>[String(r.Data), +r['Disponível']||0, +r['Indisponível']||0])
+      ).forEach(row=>dt.addRow(row));
+
       const options = {
         backgroundColor:'transparent',
-        legend:'none',
+        isStacked:true,
+        legend:{ position:'bottom', textStyle:{ color:'#cbd5e1' } },
+        hAxis:{ textStyle:{ color:'#94a3b8' } },
+        vAxis:{ textStyle:{ color:'#94a3b8' }, gridlines:{ color:'#1f2937' } },
+        chartArea:{ left:40, top:10, right:10, height:250 },
+        height:340,
+        series:{ 0:{ color:'#22c55e' }, 1:{ color:'#ef4444' } }
+      };
+      new google.visualization.ColumnChart($('#chart_div')).draw(dt, options);
+    }
+    async function carregarGrafico(){
+      const range = $('#rangeSel').value || '30d';
+      const base = $('#barBaseSel').value || '';
+      const pref = $('#barPrefSel').value || '';
+      const rows = await api('series', { range, base, prefixos: pref });
+      const isMonthly = (range === '12m');
+      google.charts.setOnLoadCallback(()=> drawBars(rows, isMonthly));
+    }
+
+    // PARETO
+    function drawPareto(rows){
+      const dt = new google.visualization.DataTable();
+      dt.addColumn('string','Motivo'); dt.addColumn('number','Qtde'); dt.addColumn({type:'string', role:'annotation'});
+      rows.forEach(r=> dt.addRow([r.Motivo, Number(r.Qtde||0), String(r.Qtde||0)]));
+      const options = {
+        backgroundColor:'transparent', legend:'none',
         annotations:{ textStyle:{ color:'#e5e7eb', bold:true }},
         hAxis:{ textStyle:{ color:'#94a3b8' }, gridlines:{ color:'#1f2937' }, minValue:0 },
         vAxis:{ textStyle:{ color:'#94a3b8' } },
@@ -385,73 +365,67 @@
       };
       new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
     }
+    async function carregarPareto(){
+      const range = $('#paretoRangeSel').value || '30d';
+      const bases = Array.from($('#paretoBasesSel').selectedOptions).map(o=>o.value).join(',');
+      const prefs = Array.from($('#paretoPrefSel').selectedOptions).map(o=>o.value).join(',');
+      const rows = await api('pareto', { range, bases, prefixos: prefs });
+      google.charts.setOnLoadCallback(()=> drawPareto(rows));
+    }
 
-    /* Dashboard loader */
-    async function refreshAll(){
-      const date    = $('#fData').value || '';
-      const status  = $('#fStatus').value || '';
-      const search  = $('#fBusca').value || '';
-      const range   = $('#rangeSel').value || '30d';
-      const base    = $('#baseChart').value || '';
-      const prefixo = $('#prefChart').value || '';
-      const pieBase = $('#pieBase').value || '';
+    // ====== LOOKUPS / COMBOS ======
+    async function carregarLookups(){
+      const lk = await api('lookups');
+      // programacao base
+      const pSel = $('#progBaseSel');
+      pSel.innerHTML = '<option value="">Todas</option>' + lk.bases.map(b=>`<option>${b}</option>`).join('');
 
-      const paretoBasesCSV    = msBases.values().join(',');
-      const paretoPrefixosCSV = msPrefixos.values().join(',');
+      // barras (base / aeronave)
+      $('#barBaseSel').innerHTML = '<option value="">Todas</option>' + lk.bases.map(b=>`<option>${b}</option>`).join('');
+      $('#barPrefSel').innerHTML = '<option value="">Todas</option>' + lk.prefixos.map(p=>`<option>${p}</option>`).join('');
 
-      const qs = {
-        fn:'dashboard', date, status, search, range,
-        base, prefixos: prefixo, pieBase,
-        paretoBases: paretoBasesCSV, paretoPrefixos: paretoPrefixosCSV
-      };
-      const url = API_URL + '?' + new URLSearchParams(qs).toString();
-      const res = await fetch(url).then(r=>r.json());
-      const data = res.data;
+      // pareto múltiplo
+      $('#paretoBasesSel').innerHTML = lk.bases.map(b=>`<option>${b}</option>`).join('');
+      $('#paretoPrefSel').innerHTML  = lk.prefixos.map(p=>`<option>${p}</option>`).join('');
+    }
 
-      // Lookups 1ª vez
-      if ($('#baseChart').options.length<=1){
-        const basesOpt   = '<option value="">Todas</option>' + data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
-        const prefOpt    = '<option value="">Todas</option>' + data.lookups.prefixos.map(v=>`<option>${v}</option>`).join('');
-        $('#baseChart').innerHTML = basesOpt;
-        $('#pieBase').innerHTML   = basesOpt;
-        $('#progBase').innerHTML  = basesOpt;
-        $('#prefChart').innerHTML = prefOpt;
+    // ====== EVENTOS UI ======
+    $('#btnFiltrar').addEventListener('click', ()=>{
+      carregarListaEKpis();
+      carregarPizza();     // pizza usa base da programação
+    });
+    $('#btnHoje').addEventListener('click', ()=>{
+      const d = new Date(); $('#fData').value = d.toISOString().slice(0,10);
+      carregarListaEKpis();
+      carregarPizza();
+    });
+    $('#btnRefresh').addEventListener('click', ()=>{
+      carregarListaEKpis(); carregarPizza(); carregarGrafico(); carregarPareto();
+    });
 
-        msBases.setItems(data.lookups.bases);
-        msPrefixos.setItems(data.lookups.prefixos);
-      }
-
-      renderListaGrouped(data.list);
-      $('#kDisp').textContent = data.kpis.disponiveis ?? '0';
-      $('#kMissao').textContent = data.kpis.missao ?? '0';
-      $('#kMnt').textContent   = data.kpis.manutencao ?? '0';
-
-      google.charts.setOnLoadCallback(()=> {
-        drawPie(data.pie, date);
-        drawColumns(data.series, range==='12m');
-        drawPareto(data.pareto);
+    // quando mudar a base da programação, recalcula lista e pizza
+    if ($('#progBaseSel')) {
+      $('#progBaseSel').addEventListener('change', ()=>{
+        carregarListaEKpis();
+        carregarPizza();
       });
     }
-    const refreshPareto = debounce(refreshAll, 150);
 
-    /* Eventos */
-    $('#btnFiltrar').addEventListener('click', refreshAll);
-    $('#btnHoje').addEventListener('click', ()=>{ $('#fData').value = new Date().toISOString().slice(0,10); refreshAll(); });
-    $('#btnRefresh').addEventListener('click', refreshAll);
+    $('#rangeSel').addEventListener('change', carregarGrafico);
+    $('#barBaseSel').addEventListener('change', carregarGrafico);
+    $('#barPrefSel').addEventListener('change', carregarGrafico);
+    $('#paretoRangeSel').addEventListener('change', carregarPareto);
+    $('#paretoBasesSel').addEventListener('change', carregarPareto);
+    $('#paretoPrefSel').addEventListener('change', carregarPareto);
 
-    $('#rangeSel').addEventListener('change', refreshAll);
-    $('#baseChart').addEventListener('change', refreshAll);
-    $('#prefChart').addEventListener('change', refreshAll);
-    $('#pieBase').addEventListener('change', refreshAll);
-    $('#progBase').addEventListener('change', refreshAll);
-
-    $('#paretoRangeSel').addEventListener('change', refreshPareto);
-    $('#fBusca').addEventListener('input', debounce(refreshAll, 400));
-    $('#fStatus').addEventListener('change', refreshAll);
-
+    // ====== INIT ======
     (async function init(){
       $('#fData').value = new Date().toISOString().slice(0,10);
-      await refreshAll();
+      await carregarLookups();
+      await carregarListaEKpis();
+      await carregarPizza();     // pizza primeiro na tela
+      await carregarGrafico();   // barras abaixo
+      await carregarPareto();
     })();
   </script>
 </body>
