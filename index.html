@@ -75,6 +75,19 @@
     .ms-title{font-size:12px;color:#9aa4b2;padding:8px 12px 0}
     .ms-footer{display:flex;gap:8px;justify-content:flex-end;padding:10px}
     .ms-footer button{height:34px;padding:0 12px}
+
+    /* ===== Divider entre seções ===== */
+    .divider{
+      display:flex; align-items:center; gap:12px;
+      margin:28px 0 8px;
+    }
+    .divider .line{
+      flex:1; height:1px; background:var(--border);
+    }
+    .divider .title{
+      font-size:12px; color:#9aa4b2; letter-spacing:.3px; text-transform:uppercase;
+      white-space:nowrap; font-weight:700;
+    }
   </style>
 </head>
 <body>
@@ -143,6 +156,13 @@
       </div>
     </div>
     <div id="pie_div"></div>
+
+    <!-- ===== Divisor visual entre pizza e indicadores ===== -->
+    <div class="divider" aria-hidden="true">
+      <div class="line"></div>
+      <div class="title">Indicadores de Disponibilidade</div>
+      <div class="line"></div>
+    </div>
 
     <!-- Gráfico barras -->
     <div class="section">
@@ -228,7 +248,7 @@
     google.charts.load('current', {'packages':['corechart']});
     const $ = s => document.querySelector(s);
     const debounce = (fn,ms=350)=>{ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);}};
-    
+
     /************** MultiSelect helper **************/
     function createMultiSelect(rootId, placeholder){
       const root = document.getElementById(rootId);
@@ -285,7 +305,6 @@
         setItems(arr){ items=[...arr]; selected.clear(); render(); },
         values(){ return [...selected]; },
         setSelectedAll(){ selected=new Set(items); render(); },
-        // >>> novo: selecionar programaticamente (usado para sincronizar com os filtros do gráfico)
         setSelected(arr){
           const set = new Set(arr||[]);
           selected = new Set(items.filter(v => set.has(v)));
@@ -449,10 +468,9 @@
     $('#btnHoje').addEventListener('click', ()=>{ $('#fData').value = new Date().toISOString().slice(0,10); refreshAll(); });
     $('#btnRefresh').addEventListener('click', refreshAll);
 
-    // >>> Sincronização: filtros do gráfico de barras -> filtros do Pareto
+    // Sincronização barras -> Pareto
     $('#baseChart').addEventListener('change', ()=>{
       const v = $('#baseChart').value;
-      // seleciona a base no multiselect do Pareto (ou limpa = todas)
       msBases.setSelected(v ? [v] : []);
       refreshAll();
     });
@@ -465,7 +483,7 @@
     $('#rangeSel').addEventListener('change', refreshAll);
     $('#pieBase').addEventListener('change', refreshAll);
 
-    // Quando a base da programação muda, sincroniza visualmente a pizza e recarrega
+    // Base da Programação reflete na Pizza
     $('#progBase').addEventListener('change', ()=>{
       $('#pieBase').value = $('#progBase').value || '';
       refreshAll();
