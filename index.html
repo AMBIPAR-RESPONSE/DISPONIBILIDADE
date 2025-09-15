@@ -8,6 +8,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet" />
   <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <!-- libs p/ gerar PDF do trecho até o gráfico de pizza -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
     :root{
@@ -28,8 +31,8 @@
     .filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-top:14px}
     .input, select, button{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text)}
     .input::placeholder{color:#64748b}
-    button.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
-    button.ghost{background:transparent;color:var(--muted)}
+    button.primary{background:var(--brand);border:none;color:#052e16;font-weight:700;cursor:pointer}
+    button.ghost{background:transparent;color:var(--muted);cursor:pointer}
     .row{display:flex;gap:12px;align-items:center}
     label{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:12px}
 
@@ -76,17 +79,19 @@
     .ms-footer{display:flex;gap:8px;justify-content:flex-end;padding:10px}
     .ms-footer button{height:34px;padding:0 12px}
 
-    /* ===== Divider entre seções ===== */
+    /* ===== Divisor entre seções (mais grosso + título maior) ===== */
     .divider{
       display:flex; align-items:center; gap:12px;
       margin:28px 0 8px;
     }
     .divider .line{
-      flex:1; height:1px; background:var(--border);
+      flex:1; height:3px; background:var(--border); /* <- mais grosso */
+      border-radius:2px;
     }
     .divider .title{
-      font-size:12px; color:#9aa4b2; letter-spacing:.3px; text-transform:uppercase;
-      white-space:nowrap; font-weight:700;
+      font-size:14px; /* <- maior */
+      color:#cbd5e1; letter-spacing:.3px; text-transform:uppercase;
+      white-space:nowrap; font-weight:800;
     }
   </style>
 </head>
@@ -95,6 +100,8 @@
     <div class="wrap row">
       <div class="brand"><span class="dot"></span> Disponibilidade da Frota</div>
       <div class="spacer"></div>
+      <!-- botão de download do PDF até o gráfico de pizza -->
+      <button class="primary" id="btnDownload" title="Baixar PDF">Download</button>
       <a class="muted" href="#" id="btnRefresh" title="Atualizar">
         <span class="material-symbols-rounded">refresh</span>
       </a>
@@ -102,60 +109,66 @@
   </div>
 
   <div class="wrap">
-    <!-- Filtros globais -->
-    <div class="filters">
-      <div class="row" style="flex:1;flex-wrap:wrap">
-        <label>Data <input class="input" type="date" id="fData"></label>
-        <label>Status
-          <select id="fStatus">
-            <option value="">Todos</option>
-            <option value="STAND BY">STAND BY</option>
-            <option value="MISSÃO">MISSÃO</option>
-            <option value="MNT">MNT</option>
-          </select>
-        </label>
-        <label>Buscar <input class="input" id="fBusca" placeholder="Prefixo, CMTE, Mecânico..."></label>
-      </div>
-      <div class="row">
-        <button class="ghost" id="btnHoje"><span class="material-symbols-rounded">calendar_month</span>&nbsp;Hoje</button>
-        <button class="primary" id="btnFiltrar"><span class="material-symbols-rounded">tune</span>&nbsp;Aplicar</button>
-      </div>
-    </div>
 
-    <!-- KPIs -->
-    <div class="kpis">
-      <div class="kpi"><div class="icon i-green">✓</div><div><h3>Disponíveis</h3><div class="val" id="kDisp">—</div></div></div>
-      <div class="kpi"><div class="icon i-blue">✈</div><div><h3>Em Missão</h3><div class="val" id="kMissao">—</div></div></div>
-      <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
-    </div>
+    <!-- ÁREA QUE ENTRA NO PDF (fecha logo após o gráfico de pizza) -->
+    <div id="exportArea">
 
-    <!-- Programação agrupada -->
-    <div class="section">
-      <h2>Programação</h2>
-      <div class="row">
-        <label>Base
-          <select id="progBase" style="min-width:180px">
-            <option value="">Todas</option>
-          </select>
-        </label>
+      <!-- Filtros globais -->
+      <div class="filters">
+        <div class="row" style="flex:1;flex-wrap:wrap">
+          <label>Data <input class="input" type="date" id="fData"></label>
+          <label>Status
+            <select id="fStatus">
+              <option value="">Todos</option>
+              <option value="STAND BY">STAND BY</option>
+              <option value="MISSÃO">MISSÃO</option>
+              <option value="MNT">MNT</option>
+            </select>
+          </label>
+          <label>Buscar <input class="input" id="fBusca" placeholder="Prefixo, CMTE, Mecânico..."></label>
+        </div>
+        <div class="row">
+          <button class="ghost" id="btnHoje"><span class="material-symbols-rounded">calendar_month</span>&nbsp;Hoje</button>
+          <button class="primary" id="btnFiltrar"><span class="material-symbols-rounded">tune</span>&nbsp;Aplicar</button>
+        </div>
       </div>
-    </div>
-    <div id="lista" class="grid-3"></div>
 
-    <!-- Pizza -->
-    <div class="section">
-      <h2>Status do dia</h2>
-      <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
-        <div class="muted" id="pie_date_hint"></div>
-        <div style="flex:1"></div>
-        <label>Base
-          <select id="pieBase" style="min-width:180px">
-            <option value="">Todas</option>
-          </select>
-        </label>
+      <!-- KPIs -->
+      <div class="kpis">
+        <div class="kpi"><div class="icon i-green">✓</div><div><h3>Disponíveis</h3><div class="val" id="kDisp">—</div></div></div>
+        <div class="kpi"><div class="icon i-blue">✈</div><div><h3>Em Missão</h3><div class="val" id="kMissao">—</div></div></div>
+        <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
       </div>
-    </div>
-    <div id="pie_div"></div>
+
+      <!-- Programação agrupada -->
+      <div class="section">
+        <h2>Programação</h2>
+        <div class="row">
+          <label>Base
+            <select id="progBase" style="min-width:180px">
+              <option value="">Todas</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div id="lista" class="grid-3"></div>
+
+      <!-- Pizza -->
+      <div class="section">
+        <h2>Status do dia</h2>
+        <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
+          <div class="muted" id="pie_date_hint"></div>
+          <div style="flex:1"></div>
+          <label>Base
+            <select id="pieBase" style="min-width:180px">
+              <option value="">Todas</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div id="pie_div"></div>
+
+    </div><!-- /exportArea (limite do PDF) -->
 
     <!-- ===== Divisor visual entre pizza e indicadores ===== -->
     <div class="divider" aria-hidden="true">
@@ -497,6 +510,38 @@
       $('#fData').value = new Date().toISOString().slice(0,10);
       await refreshAll();
     })();
+
+    /* ===== Download PDF (até o gráfico de pizza) ===== */
+    document.getElementById('btnDownload').addEventListener('click', async ()=>{
+      const area = document.getElementById('exportArea');
+      // aumenta a resolução do canvas para um PDF mais nítido
+      const canvas = await html2canvas(area, {backgroundColor:'#0b1320', scale:2});
+      const imgData = canvas.toDataURL('image/png');
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p','mm','a4');
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+
+      const imgW = pageW;
+      const imgH = canvas.height * imgW / canvas.width;
+
+      let heightLeft = imgH;
+      let position = 0;
+
+      pdf.addImage(imgData,'PNG',0,position,imgW,imgH);
+      heightLeft -= pageH;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgH;
+        pdf.addPage();
+        pdf.addImage(imgData,'PNG',0,position,imgW,imgH);
+        heightLeft -= pageH;
+      }
+
+      const file = `Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`;
+      pdf.save(file);
+    });
   </script>
 </body>
 </html>
