@@ -1,14 +1,16 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Disponibilidade da Frota</title>
 
+  <!-- Fonts & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet" />
+  <!-- Google Charts -->
   <script src="https://www.gstatic.com/charts/loader.js"></script>
-  <!-- libs p/ gerar PDF do trecho até o gráfico de pizza -->
+  <!-- Export libs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -22,17 +24,21 @@
     a{color:inherit;text-decoration:none}
     .wrap{max-width:1200px;margin:0 auto;padding:20px}
 
-    .topbar{position:sticky;top:0;z-index:10;background:rgba(11,19,32,.9);backdrop-filter: blur(8px);border-bottom:1px solid var(--border);}
+    .topbar{
+      position:sticky;top:0;z-index:10;background:rgba(11,19,32,.9);
+      backdrop-filter: blur(8px);border-bottom:1px solid var(--border);
+    }
     .topbar .row{display:flex;align-items:center;gap:16px;min-height:64px}
     .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
     .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 4px rgba(34,197,94,.25)}
     .spacer{flex:1}
+    .btn{height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--border);display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+    .btn.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
+    .btn.ghost{background:transparent;color:var(--muted)}
 
     .filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-top:14px}
     .input, select, button{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text)}
     .input::placeholder{color:#64748b}
-    button.primary{background:var(--brand);border:none;color:#052e16;font-weight:700;cursor:pointer}
-    button.ghost{background:transparent;color:var(--muted);cursor:pointer}
     .row{display:flex;gap:12px;align-items:center}
     label{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:12px}
 
@@ -67,6 +73,16 @@
     #pareto_div{height:360px}
     .foot{margin:28px 0;color:#64748b;font-size:12px;text-align:center}
 
+    /* Divider */
+    .divider{
+      position:relative;margin:26px 0 10px;border-top:6px solid var(--border);
+    }
+    .divider > span{
+      position:absolute;top:-16px;left:18px;padding:0 10px;
+      background:var(--bg);color:#dbe3ef;font-weight:800;font-size:18px;
+      letter-spacing:.2px;
+    }
+
     /* MultiSelect (checkbox) */
     .ms{position:relative;min-width:220px}
     .ms-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:220px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text);cursor:pointer}
@@ -78,21 +94,6 @@
     .ms-title{font-size:12px;color:#9aa4b2;padding:8px 12px 0}
     .ms-footer{display:flex;gap:8px;justify-content:flex-end;padding:10px}
     .ms-footer button{height:34px;padding:0 12px}
-
-    /* ===== Divisor entre seções (mais grosso + título maior) ===== */
-    .divider{
-      display:flex; align-items:center; gap:12px;
-      margin:28px 0 8px;
-    }
-    .divider .line{
-      flex:1; height:3px; background:var(--border); /* <- mais grosso */
-      border-radius:2px;
-    }
-    .divider .title{
-      font-size:14px; /* <- maior */
-      color:#cbd5e1; letter-spacing:.3px; text-transform:uppercase;
-      white-space:nowrap; font-weight:800;
-    }
   </style>
 </head>
 <body>
@@ -100,59 +101,58 @@
     <div class="wrap row">
       <div class="brand"><span class="dot"></span> Disponibilidade da Frota</div>
       <div class="spacer"></div>
-      <!-- botão de download do PDF até o gráfico de pizza -->
-      <button class="primary" id="btnDownload" title="Baixar PDF">Download</button>
-      <a class="muted" href="#" id="btnRefresh" title="Atualizar">
-        <span class="material-symbols-rounded">refresh</span>
-      </a>
+      <button class="btn ghost" id="btnRefresh" title="Atualizar">
+        <span class="material-symbols-rounded">refresh</span> Atualizar
+      </button>
+      <button class="btn primary" id="btnDownload" title="Baixar PDF">
+        <span class="material-symbols-rounded">download</span> Download
+      </button>
     </div>
   </div>
 
   <div class="wrap">
+    <!-- Filtros globais -->
+    <div class="filters">
+      <div class="row" style="flex:1;flex-wrap:wrap">
+        <label>Data <input class="input" type="date" id="fData"></label>
+        <label>Status
+          <select id="fStatus">
+            <option value="">Todos</option>
+            <option value="STAND BY">STAND BY</option>
+            <option value="MISSÃO">MISSÃO</option>
+            <option value="MNT">MNT</option>
+          </select>
+        </label>
+        <label>Buscar <input class="input" id="fBusca" placeholder="Prefixo, CMTE, Mecânico..."></label>
+      </div>
+      <div class="row">
+        <button class="btn ghost" id="btnHoje"><span class="material-symbols-rounded">calendar_month</span>&nbsp;Hoje</button>
+        <button class="btn primary" id="btnFiltrar"><span class="material-symbols-rounded">tune</span>&nbsp;Aplicar</button>
+      </div>
+    </div>
 
-    <!-- ÁREA QUE ENTRA NO PDF (fecha logo após o gráfico de pizza) -->
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi"><div class="icon i-green">✓</div><div><h3>Disponíveis</h3><div class="val" id="kDisp">—</div></div></div>
+      <div class="kpi"><div class="icon i-blue">✈</div><div><h3>Em Missão</h3><div class="val" id="kMissao">—</div></div></div>
+      <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
+    </div>
+
+    <!-- Programação agrupada -->
+    <div class="section">
+      <h2>Programação</h2>
+      <div class="row">
+        <label>Base
+          <select id="progBase" style="min-width:180px">
+            <option value="">Todas</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div id="lista" class="grid-3"></div>
+
+    <!-- ===== ÁREA DE EXPORTAÇÃO (só até a pizza) ===== -->
     <div id="exportArea">
-
-      <!-- Filtros globais -->
-      <div class="filters">
-        <div class="row" style="flex:1;flex-wrap:wrap">
-          <label>Data <input class="input" type="date" id="fData"></label>
-          <label>Status
-            <select id="fStatus">
-              <option value="">Todos</option>
-              <option value="STAND BY">STAND BY</option>
-              <option value="MISSÃO">MISSÃO</option>
-              <option value="MNT">MNT</option>
-            </select>
-          </label>
-          <label>Buscar <input class="input" id="fBusca" placeholder="Prefixo, CMTE, Mecânico..."></label>
-        </div>
-        <div class="row">
-          <button class="ghost" id="btnHoje"><span class="material-symbols-rounded">calendar_month</span>&nbsp;Hoje</button>
-          <button class="primary" id="btnFiltrar"><span class="material-symbols-rounded">tune</span>&nbsp;Aplicar</button>
-        </div>
-      </div>
-
-      <!-- KPIs -->
-      <div class="kpis">
-        <div class="kpi"><div class="icon i-green">✓</div><div><h3>Disponíveis</h3><div class="val" id="kDisp">—</div></div></div>
-        <div class="kpi"><div class="icon i-blue">✈</div><div><h3>Em Missão</h3><div class="val" id="kMissao">—</div></div></div>
-        <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
-      </div>
-
-      <!-- Programação agrupada -->
-      <div class="section">
-        <h2>Programação</h2>
-        <div class="row">
-          <label>Base
-            <select id="progBase" style="min-width:180px">
-              <option value="">Todas</option>
-            </select>
-          </label>
-        </div>
-      </div>
-      <div id="lista" class="grid-3"></div>
-
       <!-- Pizza -->
       <div class="section">
         <h2>Status do dia</h2>
@@ -167,15 +167,11 @@
         </div>
       </div>
       <div id="pie_div"></div>
-
-    </div><!-- /exportArea (limite do PDF) -->
-
-    <!-- ===== Divisor visual entre pizza e indicadores ===== -->
-    <div class="divider" aria-hidden="true">
-      <div class="line"></div>
-      <div class="title">Indicadores de Disponibilidade</div>
-      <div class="line"></div>
     </div>
+    <!-- ===== FIM exportArea ===== -->
+
+    <!-- Divisor com título -->
+    <div class="divider"><span>Indicadores de Disponibilidade</span></div>
 
     <!-- Gráfico barras -->
     <div class="section">
@@ -223,14 +219,14 @@
 
         <!-- MultiSelect Bases -->
         <div class="ms" id="msBases">
-          <div class="ms-btn"><span>Todos as Bases</span><span class="material-symbols-rounded" style="font-size:18px">expand_more</span></div>
+          <div class="ms-btn"><span>Todas as Bases</span><span class="material-symbols-rounded" style="font-size:18px">expand_more</span></div>
           <div class="ms-panel">
             <div class="ms-title">Bases</div>
             <div class="ms-row"><input type="checkbox" id="msBases_all"><label for="msBases_all">Selecionar todas</label></div>
             <div id="msBases_list"></div>
             <div class="ms-footer">
-              <button class="ghost" type="button" id="msBases_clear">Limpar</button>
-              <button class="primary" type="button" id="msBases_apply">Aplicar</button>
+              <button class="btn ghost" type="button" id="msBases_clear">Limpar</button>
+              <button class="btn primary" type="button" id="msBases_apply">Aplicar</button>
             </div>
           </div>
         </div>
@@ -243,8 +239,8 @@
             <div class="ms-row"><input type="checkbox" id="msPrefixos_all"><label for="msPrefixos_all">Selecionar todas</label></div>
             <div id="msPrefixos_list"></div>
             <div class="ms-footer">
-              <button class="ghost" type="button" id="msPrefixos_clear">Limpar</button>
-              <button class="primary" type="button" id="msPrefixos_apply">Aplicar</button>
+              <button class="btn ghost" type="button" id="msPrefixos_clear">Limpar</button>
+              <button class="btn primary" type="button" id="msPrefixos_apply">Aplicar</button>
             </div>
           </div>
         </div>
@@ -433,7 +429,7 @@
       const base    = $('#baseChart').value || '';
       const prefixo = $('#prefChart').value || '';
 
-      // >>> Pizza: prioridade à Base da Programação; se vazia, usa o seletor da própria pizza
+      // Pizza: prioridade à Base da Programação; se vazia, usa o seletor da própria pizza
       const progBaseVal = $('#progBase').value || '';
       const pieBaseSel  = $('#pieBase').value || '';
       const pieBase     = progBaseVal !== '' ? progBaseVal : pieBaseSel;
@@ -481,7 +477,7 @@
     $('#btnHoje').addEventListener('click', ()=>{ $('#fData').value = new Date().toISOString().slice(0,10); refreshAll(); });
     $('#btnRefresh').addEventListener('click', refreshAll);
 
-    // Sincronização barras -> Pareto
+    // Sincronização: filtros do gráfico de barras -> filtros do Pareto
     $('#baseChart').addEventListener('change', ()=>{
       const v = $('#baseChart').value;
       msBases.setSelected(v ? [v] : []);
@@ -496,7 +492,7 @@
     $('#rangeSel').addEventListener('change', refreshAll);
     $('#pieBase').addEventListener('change', refreshAll);
 
-    // Base da Programação reflete na Pizza
+    // Quando a base da programação muda, sincroniza visualmente a pizza e recarrega
     $('#progBase').addEventListener('change', ()=>{
       $('#pieBase').value = $('#progBase').value || '';
       refreshAll();
@@ -511,36 +507,39 @@
       await refreshAll();
     })();
 
-    /* ===== Download PDF (até o gráfico de pizza) ===== */
-    document.getElementById('btnDownload').addEventListener('click', async ()=>{
+    /* ===== Download PDF (uma única página até o gráfico de pizza) ===== */
+    document.getElementById('btnDownload').addEventListener('click', async () => {
       const area = document.getElementById('exportArea');
-      // aumenta a resolução do canvas para um PDF mais nítido
-      const canvas = await html2canvas(area, {backgroundColor:'#0b1320', scale:2});
+      const canvas = await html2canvas(area, {
+        backgroundColor: '#0b1320',
+        scale: 2,
+        useCORS: true
+      });
       const imgData = canvas.toDataURL('image/png');
-
       const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF('p','mm','a4');
+
+      const a4 = { w: 210, h: 297 }; // mm
+      const areaRatio = canvas.width / canvas.height;
+      const a4PortraitRatio = a4.w / a4.h;
+      const orientation = areaRatio > a4PortraitRatio ? 'l' : 'p';
+
+      const pdf = new jsPDF(orientation, 'mm', 'a4');
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 8;
 
-      const imgW = pageW;
-      const imgH = canvas.height * imgW / canvas.width;
-
-      let heightLeft = imgH;
-      let position = 0;
-
-      pdf.addImage(imgData,'PNG',0,position,imgW,imgH);
-      heightLeft -= pageH;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgH;
-        pdf.addPage();
-        pdf.addImage(imgData,'PNG',0,position,imgW,imgH);
-        heightLeft -= pageH;
+      let imgW = pageW - margin * 2;
+      let imgH = (canvas.height * imgW) / canvas.width;
+      if (imgH > pageH - margin * 2) {
+        imgH = pageH - margin * 2;
+        imgW = (canvas.width * imgH) / canvas.height;
       }
 
-      const file = `Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`;
-      pdf.save(file);
+      const x = (pageW - imgW) / 2;
+      const y = (pageH - imgH) / 2;
+
+      pdf.addImage(imgData, 'PNG', x, y, imgW, imgH, '', 'FAST');
+      pdf.save(`Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`);
     });
   </script>
 </body>
