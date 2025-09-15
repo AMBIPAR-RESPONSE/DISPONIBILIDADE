@@ -138,21 +138,21 @@
       <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
     </div>
 
-    <!-- Programação agrupada -->
-    <div class="section">
-      <h2>Programação</h2>
-      <div class="row">
-        <label>Base
-          <select id="progBase" style="min-width:180px">
-            <option value="">Todas</option>
-          </select>
-        </label>
-      </div>
-    </div>
-    <div id="lista" class="grid-3"></div>
-
-    <!-- ===== ÁREA DE EXPORTAÇÃO (só até a pizza) ===== -->
+    <!-- ===== ÁREA DE EXPORTAÇÃO (Programação + Pizza) ===== -->
     <div id="exportArea">
+      <!-- Programação agrupada -->
+      <div class="section">
+        <h2>Programação</h2>
+        <div class="row">
+          <label>Base
+            <select id="progBase" style="min-width:180px">
+              <option value="">Todas</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div id="lista" class="grid-3"></div>
+
       <!-- Pizza -->
       <div class="section">
         <h2>Status do dia</h2>
@@ -507,7 +507,7 @@
       await refreshAll();
     })();
 
-    /* ===== Download PDF (uma única página até o gráfico de pizza) ===== */
+    /* ===== Download PDF (uma única página até Programação + Pizza) ===== */
     document.getElementById('btnDownload').addEventListener('click', async () => {
       const area = document.getElementById('exportArea');
       const canvas = await html2canvas(area, {
@@ -528,6 +528,7 @@
       const pageH = pdf.internal.pageSize.getHeight();
       const margin = 8;
 
+      // Ajuste para caber inteiro numa única página
       let imgW = pageW - margin * 2;
       let imgH = (canvas.height * imgW) / canvas.width;
       if (imgH > pageH - margin * 2) {
