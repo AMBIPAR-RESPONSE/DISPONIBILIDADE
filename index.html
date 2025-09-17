@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
@@ -36,7 +36,7 @@
     .input, select, button{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text)}
     .input::placeholder{color:#64748b}
     button.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
-    button.ghost{background:transparent;color:var(--muted)}
+    button.ghost{background:transparent;color:#9aa4b2}
     .row{display:flex;gap:12px;align-items:center}
     label{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:12px}
 
@@ -81,7 +81,7 @@
 
     /* MultiSelect (checkbox) */
     .ms{position:relative;min-width:220px}
-    .ms-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:220px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text);cursor:pointer}
+    .ms-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:220px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:#e5e7eb;cursor:pointer}
     .ms-panel{position:absolute;top:44px;left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;min-width:280px;max-height:280px;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.35);display:none;z-index:50}
     .ms.open .ms-panel{display:block}
     .ms-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
@@ -93,6 +93,14 @@
 
     /* Área a exportar (Programação + Pizza) */
     #exportArea{background:var(--bg); padding:0 0 10px 0;}
+
+    /* Login box */
+    .loginWrap{max-width:460px;margin:40px auto;padding:20px;background:var(--card);border:1px solid var(--border);border-radius:14px}
+    .loginWrap h1{margin:0 0 12px;font-size:20px}
+    .loginRow{display:flex;gap:10px;margin-top:10px}
+    .loginRow input{flex:1}
+    .err{color:#fca5a5;font-size:13px;margin-top:8px;min-height:18px}
+    .topRight{display:flex;gap:10px;align-items:center}
   </style>
 </head>
 <body>
@@ -100,155 +108,176 @@
     <div class="wrap row">
       <div class="brand"><span class="dot"></span> Disponibilidade da Frota</div>
       <div class="spacer"></div>
-      <button id="btnDownload" class="btn">
-        <span class="material-symbols-rounded">download</span> Baixar
-      </button>
-      <a class="muted" href="#" id="btnRefresh" title="Atualizar">
-        <span class="material-symbols-rounded">refresh</span>
-      </a>
+      <div class="topRight">
+        <span id="userEmail" class="muted" style="display:none"></span>
+        <button id="btnLogout" class="btn" style="display:none"><span class="material-symbols-rounded">logout</span> Sair</button>
+        <button id="btnDownload" class="btn">
+          <span class="material-symbols-rounded">download</span> Baixar
+        </button>
+        <a class="muted" href="#" id="btnRefresh" title="Atualizar">
+          <span class="material-symbols-rounded">refresh</span>
+        </a>
+      </div>
     </div>
   </div>
 
-  <div class="wrap">
-    <!-- Filtros globais -->
-    <div class="filters">
-      <div class="row" style="flex:1;flex-wrap:wrap">
-        <label>Data <input class="input" type="date" id="fData"></label>
-        <label>Status
-          <select id="fStatus">
-            <option value="">Todos</option>
-            <option value="STAND BY">STAND BY</option>
-            <option value="MISSÃO">MISSÃO</option>
-            <option value="MNT">MNT</option>
-          </select>
-        </label>
-        <label>Buscar <input class="input" id="fBusca" placeholder="Prefixo, CMTE, Mecânico..."></label>
-      </div>
-      <div class="row">
-        <button class="btn" id="btnHoje"><span class="material-symbols-rounded">calendar_month</span>&nbsp;Hoje</button>
-        <button class="btn primary" id="btnFiltrar"><span class="material-symbols-rounded">tune</span>&nbsp;Aplicar</button>
-      </div>
+  <!-- LOGIN -->
+  <div id="loginBox" class="loginWrap" style="display:none">
+    <h1>Acesso restrito</h1>
+    <label>Email
+      <input id="lgEmail" class="input" type="email" placeholder="voce@empresa.com">
+    </label>
+    <label>Senha
+      <input id="lgPass" class="input" type="password" placeholder="••••••••">
+    </label>
+    <div class="loginRow">
+      <button id="btnLogin" class="btn primary" style="width:160px"><span class="material-symbols-rounded">login</span>&nbsp;Entrar</button>
+      <span id="lgErr" class="err"></span>
     </div>
+  </div>
 
-    <!-- KPIs -->
-    <div class="kpis">
-      <div class="kpi"><div class="icon i-green">✓</div><div><h3>Disponíveis</h3><div class="val" id="kDisp">—</div></div></div>
-      <div class="kpi"><div class="icon i-blue">✈</div><div><h3>Em Missão</h3><div class="val" id="kMissao">—</div></div></div>
-      <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
-    </div>
-
-    <!-- ====== BLOCO EXPORTÁVEL (começa aqui) ====== -->
-    <div id="exportArea">
-      <!-- Programação agrupada -->
-      <div class="section">
-        <h2>Programação</h2>
+  <!-- DASHBOARD -->
+  <div id="dashWrap" style="display:none">
+    <div class="wrap">
+      <!-- Filtros globais -->
+      <div class="filters">
+        <div class="row" style="flex:1;flex-wrap:wrap">
+          <label>Data <input class="input" type="date" id="fData"></label>
+          <label>Status
+            <select id="fStatus">
+              <option value="">Todos</option>
+              <option value="STAND BY">STAND BY</option>
+              <option value="MISSÃO">MISSÃO</option>
+              <option value="MNT">MNT</option>
+            </select>
+          </label>
+          <label>Buscar <input class="input" id="fBusca" placeholder="Prefixo, CMTE, Mecânico..."></label>
+        </div>
         <div class="row">
-          <label>Base
-            <select id="progBase" style="min-width:180px">
-              <option value="">Todas</option>
-            </select>
-          </label>
+          <button class="btn" id="btnHoje"><span class="material-symbols-rounded">calendar_month</span>&nbsp;Hoje</button>
+          <button class="btn primary" id="btnFiltrar"><span class="material-symbols-rounded">tune</span>&nbsp;Aplicar</button>
         </div>
       </div>
-      <div id="lista" class="grid-3"></div>
 
-      <!-- Pizza -->
+      <!-- KPIs -->
+      <div class="kpis">
+        <div class="kpi"><div class="icon i-green">✓</div><div><h3>Disponíveis</h3><div class="val" id="kDisp">—</div></div></div>
+        <div class="kpi"><div class="icon i-blue">✈</div><div><h3>Em Missão</h3><div class="val" id="kMissao">—</div></div></div>
+        <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
+      </div>
+
+      <!-- ====== BLOCO EXPORTÁVEL ====== -->
+      <div id="exportArea">
+        <!-- Programação -->
+        <div class="section">
+          <h2>Programação</h2>
+          <div class="row">
+            <label>Base
+              <select id="progBase" style="min-width:180px">
+                <option value="">Todas</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div id="lista" class="grid-3"></div>
+
+        <!-- Pizza -->
+        <div class="section">
+          <h2>Status do dia</h2>
+          <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
+            <div class="muted" id="pie_date_hint"></div>
+            <div style="flex:1"></div>
+            <label>Base
+              <select id="pieBase" style="min-width:180px">
+                <option value="">Todas</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div id="pie_div"></div>
+      </div>
+
+      <!-- Divisor + título -->
+      <div class="divider"><span class="label">Indicadores de Disponibilidade</span></div>
+
+      <!-- Gráfico barras -->
       <div class="section">
-        <h2>Status do dia</h2>
+        <h2>Disponíveis x Indisponíveis</h2>
         <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
-          <div class="muted" id="pie_date_hint"></div>
-          <div style="flex:1"></div>
           <label>Base
-            <select id="pieBase" style="min-width:180px">
+            <select id="baseChart" style="min-width:180px">
               <option value="">Todas</option>
+            </select>
+          </label>
+          <label>Aeronave
+            <select id="prefChart" style="min-width:160px">
+              <option value="">Todas</option>
+            </select>
+          </label>
+          <div style="flex:1"></div>
+          <label>Período
+            <select id="rangeSel">
+              <option value="15d">15 dias</option>
+              <option value="30d" selected>30 dias</option>
+              <option value="60d">60 dias</option>
+              <option value="90d">90 dias</option>
+              <option value="180d">180 dias</option>
+              <option value="12m">12 meses</option>
             </select>
           </label>
         </div>
       </div>
-      <div id="pie_div"></div>
-    </div>
-    <!-- ====== BLOCO EXPORTÁVEL (termina aqui) ====== -->
+      <div id="chart_div"></div>
 
-    <!-- Divisor + título -->
-    <div class="divider"><span class="label">Indicadores de Disponibilidade</span></div>
+      <!-- Pareto -->
+      <div class="section">
+        <h2>Pareto • Motivos de Manutenção</h2>
+        <div class="row" style="gap:14px; align-items:center; flex-wrap:wrap">
+          <label>Período
+            <select id="paretoRangeSel">
+              <option value="15d">15 dias</option>
+              <option value="30d" selected>30 dias</option>
+              <option value="60d">60 dias</option>
+              <option value="90d">90 dias</option>
+              <option value="180d">180 dias</option>
+              <option value="12m">12 meses</option>
+            </select>
+          </label>
 
-    <!-- Gráfico barras -->
-    <div class="section">
-      <h2>Disponíveis x Indisponíveis</h2>
-      <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
-        <label>Base
-          <select id="baseChart" style="min-width:180px">
-            <option value="">Todas</option>
-          </select>
-        </label>
-        <label>Aeronave
-          <select id="prefChart" style="min-width:160px">
-            <option value="">Todas</option>
-          </select>
-        </label>
-        <div style="flex:1"></div>
-        <label>Período
-          <select id="rangeSel">
-            <option value="15d">15 dias</option>
-            <option value="30d" selected>30 dias</option>
-            <option value="60d">60 dias</option>
-            <option value="90d">90 dias</option>
-            <option value="180d">180 dias</option>
-            <option value="12m">12 meses</option>
-          </select>
-        </label>
-      </div>
-    </div>
-    <div id="chart_div"></div>
-
-    <!-- Pareto -->
-    <div class="section">
-      <h2>Pareto • Motivos de Manutenção</h2>
-      <div class="row" style="gap:14px; align-items:center; flex-wrap:wrap">
-        <label>Período
-          <select id="paretoRangeSel">
-            <option value="15d">15 dias</option>
-            <option value="30d" selected>30 dias</option>
-            <option value="60d">60 dias</option>
-            <option value="90d">90 dias</option>
-            <option value="180d">180 dias</option>
-            <option value="12m">12 meses</option>
-          </select>
-        </label>
-
-        <!-- MultiSelect Bases -->
-        <div class="ms" id="msBases">
-          <div class="ms-btn"><span>Todos as Bases</span><span class="material-symbols-rounded" style="font-size:18px">expand_more</span></div>
-          <div class="ms-panel">
-            <div class="ms-title">Bases</div>
-            <div class="ms-row"><input type="checkbox" id="msBases_all"><label for="msBases_all">Selecionar todas</label></div>
-            <div id="msBases_list"></div>
-            <div class="ms-footer">
-              <button class="btn" type="button" id="msBases_clear">Limpar</button>
-              <button class="btn primary" type="button" id="msBases_apply">Aplicar</button>
+          <!-- MultiSelect Bases -->
+          <div class="ms" id="msBases">
+            <div class="ms-btn"><span>Todos as Bases</span><span class="material-symbols-rounded" style="font-size:18px">expand_more</span></div>
+            <div class="ms-panel">
+              <div class="ms-title">Bases</div>
+              <div class="ms-row"><input type="checkbox" id="msBases_all"><label for="msBases_all">Selecionar todas</label></div>
+              <div id="msBases_list"></div>
+              <div class="ms-footer">
+                <button class="btn" type="button" id="msBases_clear">Limpar</button>
+                <button class="btn primary" type="button" id="msBases_apply">Aplicar</button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- MultiSelect Prefixos -->
-        <div class="ms" id="msPrefixos">
-          <div class="ms-btn"><span>Todas as Aeronaves</span><span class="material-symbols-rounded" style="font-size:18px">expand_more</span></div>
-          <div class="ms-panel">
-            <div class="ms-title">Aeronaves</div>
-            <div class="ms-row"><input type="checkbox" id="msPrefixos_all"><label for="msPrefixos_all">Selecionar todas</label></div>
-            <div id="msPrefixos_list"></div>
-            <div class="ms-footer">
-              <button class="btn" type="button" id="msPrefixos_clear">Limpar</button>
-              <button class="btn primary" type="button" id="msPrefixos_apply">Aplicar</button>
+          <!-- MultiSelect Prefixos -->
+          <div class="ms" id="msPrefixos">
+            <div class="ms-btn"><span>Todas as Aeronaves</span><span class="material-symbols-rounded" style="font-size:18px">expand_more</span></div>
+            <div class="ms-panel">
+              <div class="ms-title">Aeronaves</div>
+              <div class="ms-row"><input type="checkbox" id="msPrefixos_all"><label for="msPrefixos_all">Selecionar todas</label></div>
+              <div id="msPrefixos_list"></div>
+              <div class="ms-footer">
+                <button class="btn" type="button" id="msPrefixos_clear">Limpar</button>
+                <button class="btn primary" type="button" id="msPrefixos_apply">Aplicar</button>
+              </div>
             </div>
           </div>
+
         </div>
-
       </div>
-    </div>
-    <div id="pareto_div"></div>
+      <div id="pareto_div"></div>
 
-    <div class="foot">Atualiza a partir da sua planilha (Apps Script como API) • Visual público</div>
+      <div class="foot">Atualiza a partir da sua planilha (Apps Script como API) • Visual restrito</div>
+    </div>
   </div>
 
   <script>
@@ -260,6 +289,74 @@
     const $ = s => document.querySelector(s);
     const debounce = (fn,ms=350)=>{ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);}};
     
+    /************** Auth helpers **************/
+    const TOK_KEY='dash_t';
+    function getToken(){ return localStorage.getItem(TOK_KEY)||''; }
+    function setToken(t){ if(t) localStorage.setItem(TOK_KEY,t); else localStorage.removeItem(TOK_KEY); }
+
+    async function apiFetch(params){
+      const qp = new URLSearchParams(params);
+      const t = getToken();
+      if (t) qp.set('t', t);
+      const res = await fetch(API_URL+'?'+qp.toString());
+      const json = await res.json();
+      // Quando retorna {ok:false,error:'UNAUTHORIZED'}
+      if (json && json.error === 'UNAUTHORIZED'){
+        setToken('');
+        showLogin();
+        throw new Error('UNAUTHORIZED');
+      }
+      return json;
+    }
+
+    async function checkMe(){
+      const t=getToken(); if(!t) return false;
+      const r = await apiFetch({fn:'me'}).catch(()=>null);
+      if (r && r.ok && r.data && r.data.ok){
+        const email = r.data.email || '';
+        $('#userEmail').textContent=email;
+        $('#userEmail').style.display='inline';
+        $('#btnLogout').style.display='inline-flex';
+        return true;
+      }
+      return false;
+    }
+
+    async function login(){
+      const email=$('#lgEmail').value.trim();
+      const password=$('#lgPass').value;
+      $('#lgErr').textContent='';
+      try{
+        const r = await apiFetch({fn:'login', email, password});
+        const data = r.data || {};
+        if (!data.ok){ $('#lgErr').textContent = data.error || 'Falha no login'; return; }
+        setToken(data.token);
+        $('#lgPass').value='';
+        showDash();
+        await refreshAll();
+      }catch(err){
+        $('#lgErr').textContent = 'Erro ao autenticar';
+      }
+    }
+
+    async function logout(){
+      const t=getToken();
+      if(t){ await apiFetch({fn:'logout'}).catch(()=>{}); }
+      setToken('');
+      $('#userEmail').style.display='none';
+      $('#btnLogout').style.display='none';
+      showLogin();
+    }
+
+    function showLogin(){
+      $('#loginBox').style.display='block';
+      $('#dashWrap').style.display='none';
+    }
+    function showDash(){
+      $('#loginBox').style.display='none';
+      $('#dashWrap').style.display='block';
+    }
+
     /************** MultiSelect helper **************/
     function createMultiSelect(rootId, placeholder){
       const root = document.getElementById(rootId);
@@ -336,7 +433,7 @@
       return `<span class="chip">${status||'-'}</span>`;
     }
 
-    // >>> render com a linha de Previsão (quando houver)
+    // render com a linha de Previsão (quando houver)
     function renderListaGrouped(rows){
       const baseSel = $('#progBase').value || '';
       const norm = s => String(s||'').toLowerCase();
@@ -411,7 +508,7 @@
       dt.addColumn('string','Motivo');
       dt.addColumn('number','Qtde');
       dt.addColumn({type:'string', role:'annotation'});
-      rows.forEach(r=> dt.addRow([r.Motivo, Number(r.Qtde||0), String(r.Qtde||0)]));
+      rows.forEach(r=> dt.addRow([r.Motivo, Number(r.Qtde||0), String(r.Qtde||0)]);
       const options = {
         backgroundColor:'transparent',
         legend:'none',
@@ -434,7 +531,6 @@
       const base    = $('#baseChart').value || '';
       const prefixo = $('#prefChart').value || '';
 
-      // Pizza: prioridade à Base da Programação; se vazia, usa o seletor da própria pizza
       const progBaseVal = $('#progBase').value || '';
       const pieBaseSel  = $('#pieBase').value || '';
       const pieBase     = progBaseVal !== '' ? progBaseVal : pieBaseSel;
@@ -447,8 +543,7 @@
         base, prefixos: prefixo, pieBase,
         paretoBases: paretoBasesCSV, paretoPrefixos: paretoPrefixosCSV
       };
-      const url = API_URL + '?' + new URLSearchParams(qs).toString();
-      const res = await fetch(url).then(r=>r.json());
+      const res = await apiFetch(qs);
       const data = res.data;
 
       // Lookups 1ª vez
@@ -481,6 +576,9 @@
     $('#btnFiltrar').addEventListener('click', refreshAll);
     $('#btnHoje').addEventListener('click', ()=>{ $('#fData').value = new Date().toISOString().slice(0,10); refreshAll(); });
     $('#btnRefresh').addEventListener('click', refreshAll);
+    $('#btnLogout').addEventListener('click', logout);
+    $('#btnLogin').addEventListener('click', login);
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && $('#loginBox').style.display!=='none') login(); });
 
     // Sincronização: filtros do gráfico de barras -> filtros do Pareto
     $('#baseChart').addEventListener('change', ()=>{
@@ -496,7 +594,6 @@
 
     $('#rangeSel').addEventListener('change', refreshAll);
     $('#pieBase').addEventListener('change', refreshAll);
-    // Quando a base da programação muda, sincroniza visualmente a pizza e recarrega
     $('#progBase').addEventListener('change', ()=>{
       $('#pieBase').value = $('#progBase').value || '';
       refreshAll();
@@ -507,8 +604,9 @@
     $('#fStatus').addEventListener('change', refreshAll);
 
     (async function init(){
-      $('#fData').value = new Date().toISOString().slice(0,10);
-      await refreshAll();
+      // decide se mostra login ou dashboard
+      if (await checkMe()){ showDash(); await refreshAll(); }
+      else { showLogin(); }
     })();
 
     /* ====== Baixar PDF (Programação + Pizza, sem bordas) ====== */
