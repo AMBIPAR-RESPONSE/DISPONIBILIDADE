@@ -508,7 +508,7 @@
       dt.addColumn('string','Motivo');
       dt.addColumn('number','Qtde');
       dt.addColumn({type:'string', role:'annotation'});
-      rows.forEach(r=> dt.addRow([r.Motivo, Number(r.Qtde||0), String(r.Qtde||0)]);
+      rows.forEach(r=> dt.addRow([r.Motivo, Number(r.Qtde||0), String(r.Qtde||0)]));
       const options = {
         backgroundColor:'transparent',
         legend:'none',
