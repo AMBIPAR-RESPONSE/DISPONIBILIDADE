@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
@@ -81,7 +81,7 @@
 
     /* MultiSelect (checkbox) */
     .ms{position:relative;min-width:220px}
-    .ms-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:220px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:#var(--text);cursor:pointer}
+    .ms-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:220px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text);cursor:pointer}
     .ms-panel{position:absolute;top:44px;left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;min-width:280px;max-height:280px;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.35);display:none;z-index:50}
     .ms.open .ms-panel{display:block}
     .ms-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
@@ -93,21 +93,6 @@
 
     /* Área a exportar (Programação + Pizza) */
     #exportArea{background:var(--bg); padding:0 0 10px 0;}
-
-    /* ===== Modal de Login ===== */
-    .login-backdrop{
-      position:fixed; inset:0; background:rgba(0,0,0,.6);
-      display:none; align-items:center; justify-content:center; z-index:9999;
-    }
-    .login-card{
-      width:100%; max-width:360px; background:#111827; border:1px solid #1f2937;
-      border-radius:14px; padding:18px; color:#e5e7eb; box-shadow:0 10px 40px rgba(0,0,0,.5);
-    }
-    .login-card h3{ margin:0 0 10px; font-weight:800 }
-    .login-card .row{ display:flex; flex-direction:column; gap:6px; margin-bottom:10px }
-    .login-card input{ height:40px; border:1px solid #1f2937; background:#0b1220; color:#e5e7eb; border-radius:10px; padding:0 12px }
-    .login-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:6px }
-    .login-error{ color:#f87171; font-size:12px; min-height:18px }
   </style>
 </head>
 <body>
@@ -121,29 +106,6 @@
       <a class="muted" href="#" id="btnRefresh" title="Atualizar">
         <span class="material-symbols-rounded">refresh</span>
       </a>
-      <a class="muted" href="#" id="btnLogout" title="Sair">
-        <span class="material-symbols-rounded">logout</span>
-      </a>
-    </div>
-  </div>
-
-  <!-- Modal de Login -->
-  <div id="loginModal" class="login-backdrop">
-    <div class="login-card">
-      <h3>Entrar</h3>
-      <div class="row">
-        <label>Email</label>
-        <input type="email" id="lgEmail" placeholder="email@empresa.com">
-      </div>
-      <div class="row">
-        <label>Senha</label>
-        <input type="password" id="lgPass" placeholder="sua senha">
-      </div>
-      <div class="login-error" id="lgError"></div>
-      <div class="login-actions">
-        <button class="btn" id="lgCancelar">Cancelar</button>
-        <button class="btn primary" id="lgEntrar">Entrar</button>
-      </div>
     </div>
   </div>
 
@@ -286,66 +248,18 @@
     </div>
     <div id="pareto_div"></div>
 
-    <div class="foot">Atualiza a partir da sua planilha (Apps Script como API) • Visual restrito</div>
+    <div class="foot">Atualiza a partir da sua planilha (Apps Script como API) • Visual público</div>
   </div>
 
   <script>
     // ======= CONFIGURE AQUI =======
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyJkkKCLlGl5kpaYv_rhxzR3ZibVssym9aiFvcbHOWrUksQRwiYL3eTBSw6bQS4b8vp/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzuPkCWigr-hm6qTn6xe3OFndDwKHhfypAbXmlj5H1VkU15Fzrq5nnJN42qsnQcz73D/exec';
     // ==============================
 
     google.charts.load('current', {'packages':['corechart']});
     const $ = s => document.querySelector(s);
     const debounce = (fn,ms=350)=>{ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);}};
     
-    /* ====== AUTH (token) ====== */
-    function authGetToken(){ return localStorage.getItem('auth_token') || ''; }
-    function authSetToken(t){ localStorage.setItem('auth_token', t || ''); }
-    function authClear(){ localStorage.removeItem('auth_token'); }
-    async function authCheck(){
-      const t = authGetToken();
-      if (!t) return false;
-      try{
-        const r = await fetch(API_URL+'?fn=me&t='+encodeURIComponent(t)).then(x=>x.json());
-        return r && r.ok===true && r.data && r.data.ok===true;
-      }catch(_){ return false; }
-    }
-    async function authLogin(email, password){
-      const url = API_URL+'?fn=login&email='+encodeURIComponent(email)+'&password='+encodeURIComponent(password);
-      const r = await fetch(url).then(x=>x.json()).catch(()=>null);
-      if (r && r.ok && r.data && r.data.ok){
-        authSetToken(r.data.token);
-        return true;
-      }
-      throw new Error((r && r.data && r.data.error) || 'Falha no login');
-    }
-    async function authLogout(){
-      const t = authGetToken();
-      if (t){ try{ await fetch(API_URL+'?fn=logout&t='+encodeURIComponent(t)); }catch(_){ } }
-      authClear();
-      showLogin(true);
-    }
-    function showLogin(show){
-      const m = $('#loginModal');
-      m.style.display = show ? 'flex' : 'none';
-      if (show){
-        $('#lgError').textContent = '';
-        $('#lgEmail').focus();
-      }
-    }
-
-    // Modal events
-    window.addEventListener('DOMContentLoaded', ()=>{
-      $('#lgCancelar').addEventListener('click', ()=> showLogin(false));
-      $('#lgEntrar').addEventListener('click', async ()=>{
-        $('#lgError').textContent='';
-        try{
-          const ok = await authLogin($('#lgEmail').value.trim(), $('#lgPass').value);
-          if (ok){ showLogin(false); initAfterAuth(); }
-        }catch(e){ $('#lgError').textContent = String(e.message||e); }
-      });
-    });
-
     /************** MultiSelect helper **************/
     function createMultiSelect(rootId, placeholder){
       const root = document.getElementById(rootId);
@@ -421,6 +335,8 @@
       if (S==='MNT') return '<span class="chip mt">MNT</span>';
       return `<span class="chip">${status||'-'}</span>`;
     }
+
+    // >>> render com a linha de Previsão (quando houver)
     function renderListaGrouped(rows){
       const baseSel = $('#progBase').value || '';
       const norm = s => String(s||'').toLowerCase();
@@ -440,6 +356,7 @@
               <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
               <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
               ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
+              ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
             </div>
             ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
           </div>`;
@@ -517,6 +434,7 @@
       const base    = $('#baseChart').value || '';
       const prefixo = $('#prefChart').value || '';
 
+      // Pizza: prioridade à Base da Programação; se vazia, usa o seletor da própria pizza
       const progBaseVal = $('#progBase').value || '';
       const pieBaseSel  = $('#pieBase').value || '';
       const pieBase     = progBaseVal !== '' ? progBaseVal : pieBaseSel;
@@ -527,18 +445,10 @@
       const qs = {
         fn:'dashboard', date, status, search, range,
         base, prefixos: prefixo, pieBase,
-        paretoBases: paretoBasesCSV, paretoPrefixos: paretoPrefixosCSV,
-        t: authGetToken() // <<=== token vai junto
+        paretoBases: paretoBasesCSV, paretoPrefixos: paretoPrefixosCSV
       };
       const url = API_URL + '?' + new URLSearchParams(qs).toString();
-      const res = await fetch(url).then(r=>r.json()).catch(()=>null);
-
-      // Sem token ou expirado
-      if (!res || res.error === 'UNAUTHORIZED'){
-        showLogin(true);
-        return;
-      }
-
+      const res = await fetch(url).then(r=>r.json());
       const data = res.data;
 
       // Lookups 1ª vez
@@ -596,18 +506,9 @@
     $('#fBusca').addEventListener('input', debounce(refreshAll, 400));
     $('#fStatus').addEventListener('change', refreshAll);
 
-    // Logout
-    $('#btnLogout').addEventListener('click', (e)=>{ e.preventDefault(); authLogout(); });
-
-    // Inicialização condicionada ao login
-    async function initAfterAuth(){
+    (async function init(){
       $('#fData').value = new Date().toISOString().slice(0,10);
       await refreshAll();
-    }
-    (async function init(){
-      const ok = await authCheck();
-      if (!ok){ showLogin(true); return; }
-      await initAfterAuth();
     })();
 
     /* ====== Baixar PDF (Programação + Pizza, sem bordas) ====== */
@@ -624,6 +525,7 @@
       const imgData = canvas.toDataURL('image/png');
       const imgW = canvas.width;
       const imgH = canvas.height;
+
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({
         orientation: imgW >= imgH ? 'l' : 'p',
