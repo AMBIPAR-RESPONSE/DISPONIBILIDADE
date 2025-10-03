@@ -71,7 +71,6 @@
     #pareto_div{height:360px}
     .foot{margin:28px 0;color:#64748b;font-size:12px;text-align:center}
 
-    /* divisor grosso */
     .divider{
       margin:26px 0 8px;
       border-bottom:4px solid #1f2937;
@@ -282,7 +281,7 @@
 
   <script>
     // ======= CONFIGURE AQUI =======
-    const API_URL = 'https://script.google.com/macros/s/AKfycbw3Y0BM2WgKZxrZDXbagOh-O0m6Dc3MIwBcGfgr-dhsfJG2HNgcVojtT9Oe_cvCGP-i/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwvgB246O1BExHgC4h9c201AAia0fM6mY9W-UGmHgQxX2RZ1qSEr6vQwalKygBseVgD/exec';
     // ==============================
 
     google.charts.load('current', {'packages':['corechart']});
@@ -300,7 +299,6 @@
       if (t) qp.set('t', t);
       const res = await fetch(API_URL+'?'+qp.toString());
       const json = await res.json();
-      // Quando retorna {ok:false,error:'UNAUTHORIZED'}
       if (json && json.error === 'UNAUTHORIZED'){
         setToken('');
         showLogin();
@@ -367,7 +365,7 @@
       const apply= root.querySelector(`#${rootId}_apply`);
       const clear= root.querySelector(`#${rootId}_clear`);
 
-      let items = []; // valores simples
+      let items = [];
       let selected = new Set();
 
       const updateBtn = ()=>{
@@ -433,7 +431,6 @@
       return `<span class="chip">${status||'-'}</span>`;
     }
 
-    // render com a linha de Previsão (quando houver)
     function renderListaGrouped(rows){
       const baseSel = $('#progBase').value || '';
       const norm = s => String(s||'').toLowerCase();
@@ -604,7 +601,6 @@
     $('#fStatus').addEventListener('change', refreshAll);
 
     (async function init(){
-      // decide se mostra login ou dashboard
       if (await checkMe()){ showDash(); await refreshAll(); }
       else { showLogin(); }
     })();
