@@ -18,6 +18,7 @@
     :root{
       --bg:#0b1320; --card:#111827; --muted:#94a3b8; --text:#e5e7eb; --border:#1f2937;
       --brand:#22c55e; --brand-2:#3b82f6; --danger:#ef4444; --chip:#0f172a;
+      --line:#1f2937;
     }
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
@@ -53,17 +54,20 @@
     .section{display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px}
     .section h2{margin:0;font-size:18px}
 
-    /* === Programação em 3 colunas horizontais (sempre lado a lado) === */
-    #lista{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr); /* STAND BY | MISSÃO | MNT */
-      gap:14px;
-      align-items:flex-start;
-    }
-    .col{display:flex;flex-direction:column;gap:14px;min-width:0}
-    .colTitle{display:flex;align-items:center;justify-content:space-between;color:#cbd5e1;margin-bottom:4px;font-weight:700;letter-spacing:.2px}
+    /* === Programação em FAIXAS HORIZONTAIS (uma linha por status) === */
+    .hgroup{display:flex;flex-direction:column;gap:10px;margin:14px 0 24px}
+    .hline{display:flex;align-items:center;gap:12px}
+    .hlabel{font-weight:800;letter-spacing:.3px;font-size:16px;color:#cbd5e1;white-space:nowrap}
+    .hdivider{height:4px;background:var(--line);border-radius:3px;flex:1}
 
-    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
+    .hlist{
+      display:flex;
+      flex-wrap:wrap;          /* quebra para caber, sem barra de rolagem */
+      gap:14px;
+      align-items:stretch;
+    }
+
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;min-width:260px;max-width:360px;flex:1 1 260px}
     .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
     .prefixo{font-weight:800;font-size:18px}
     .chip{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--chip);border:1px solid var(--border)}
@@ -79,6 +83,7 @@
     .divider{margin:26px 0 8px;border-bottom:4px solid #1f2937;display:flex;align-items:center;gap:12px}
     .divider .label{font-weight:800;letter-spacing:.3px;font-size:18px;color:#cbd5e1}
 
+    /* MultiSelect */
     .ms{position:relative;min-width:220px}
     .ms-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:220px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:#e5e7eb;cursor:pointer}
     .ms-panel{position:absolute;top:44px;left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;min-width:280px;max-height:280px;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.35);display:none;z-index:50}
@@ -176,8 +181,32 @@
           </div>
         </div>
 
-        <!-- 3 colunas lado a lado SEM rolagem -->
-        <div id="lista"></div>
+        <!-- FAIXA: STAND BY -->
+        <div class="hgroup">
+          <div class="hline">
+            <span class="hlabel">STAND BY <span class="muted" id="cntSB">(0)</span></span>
+            <span class="hdivider"></span>
+          </div>
+          <div class="hlist" id="sbList"></div>
+        </div>
+
+        <!-- FAIXA: EM MISSÃO -->
+        <div class="hgroup">
+          <div class="hline">
+            <span class="hlabel">EM MISSÃO <span class="muted" id="cntMS">(0)</span></span>
+            <span class="hdivider"></span>
+          </div>
+          <div class="hlist" id="msList"></div>
+        </div>
+
+        <!-- FAIXA: EM MANUTENÇÃO -->
+        <div class="hgroup">
+          <div class="hline">
+            <span class="hlabel">EM MANUTENÇÃO <span class="muted" id="cntMNT">(0)</span></span>
+            <span class="hdivider"></span>
+          </div>
+          <div class="hlist" id="mntList"></div>
+        </div>
 
         <!-- Pizza -->
         <div class="section">
@@ -430,7 +459,7 @@
       return `<span class="chip">${status||'-'}</span>`;
     }
 
-    // 3 colunas lado a lado SEM rolagem
+    // Render em FAIXAS HORIZONTAIS
     function renderListaGrouped(rows){
       const baseSel = $('#progBase').value || '';
       const norm = s => String(s||'').toLowerCase();
@@ -458,13 +487,14 @@
         else if (st==='MNT') MNT.push(card);
         else MS.push(card);
       }
-      const col = (title, arr) => `
-        <div class="col">
-          <div class="colTitle">${title} <span class="muted">(${arr.length})</span></div>
-          ${arr.length ? arr.join('') : `<div class="muted">—</div>`}
-        </div>`;
-      // STAND BY | MISSÃO | MNT em HORIZONTAL
-      $('#lista').innerHTML = col('STAND BY', SB) + col('EM MISSÃO', MS) + col('EM MANUTENÇÃO', MNT);
+      // injeta nas listas horizontais
+      $('#sbList').innerHTML  = SB.length ? SB.join('')  : `<div class="muted">—</div>`;
+      $('#msList').innerHTML  = MS.length ? MS.join('')  : `<div class="muted">—</div>`;
+      $('#mntList').innerHTML = MNT.length? MNT.join('') : `<div class="muted">—</div>`;
+      // contadores no cabeçalho de cada faixa
+      $('#cntSB').textContent  = `(${SB.length})`;
+      $('#cntMS').textContent  = `(${MS.length})`;
+      $('#cntMNT').textContent = `(${MNT.length})`;
     }
 
     /* Charts */
@@ -609,7 +639,7 @@
       const node = document.getElementById('exportArea');
       await new Promise(r=>requestAnimationFrame(r));
 
-      // Renderiza em alta escala pra nitidez
+      // Render em alta escala para nitidez
       const scale = Math.max(2, (window.devicePixelRatio || 1)) * 1.25;
       const canvas = await html2canvas(node, {
         backgroundColor: getComputedStyle(document.body).backgroundColor || '#0b1320',
@@ -624,16 +654,14 @@
 
       const { jsPDF } = window.jspdf;
 
-      // Cria um PDF do tamanho EXATO do canvas (sem margem/borda)
+      // Página do tamanho EXATO do canvas (sem margem)
       const pdf = new jsPDF({
         orientation: w >= h ? 'landscape' : 'portrait',
         unit: 'pt',
         format: [w, h]
       });
 
-      // Full-bleed: ocupa 100% da página
       pdf.addImage(imgData, 'PNG', 0, 0, w, h, undefined, 'FAST');
-
       const name = `Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`;
       pdf.save(name);
     }
