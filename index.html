@@ -54,19 +54,12 @@
     .section{display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px}
     .section h2{margin:0;font-size:18px}
 
-    /* === Programação em FAIXAS HORIZONTAIS (uma linha por status) === */
     .hgroup{display:flex;flex-direction:column;gap:10px;margin:14px 0 24px}
     .hline{display:flex;align-items:center;gap:12px}
     .hlabel{font-weight:800;letter-spacing:.3px;font-size:16px;color:#cbd5e1;white-space:nowrap}
     .hdivider{height:4px;background:var(--line);border-radius:3px;flex:1}
 
-    .hlist{
-      display:flex;
-      flex-wrap:wrap;          /* quebra para caber, sem barra de rolagem */
-      gap:14px;
-      align-items:stretch;
-    }
-
+    .hlist{display:flex;flex-wrap:wrap;gap:14px;align-items:stretch}
     .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;min-width:260px;max-width:360px;flex:1 1 260px}
     .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
     .prefixo{font-weight:800;font-size:18px}
@@ -96,12 +89,13 @@
     .ms-footer button{height:34px;padding:0 12px}
 
     #exportArea{background:var(--bg); padding:0 0 10px 0;}
-    .loginWrap{max-width:460px;margin:40px auto;padding:20px;background:var(--card);border:1px solid var(--border);border-radius:14px}
-    .loginWrap h1{margin:0 0 12px;font-size:20px}
-    .loginRow{display:flex;gap:10px;margin-top:10px}
-    .loginRow input{flex:1}
-    .err{color:#fca5a5;font-size:13px;margin-top:8px;min-height:18px}
-    .topRight{display:flex;gap:10px;align-items:center}
+
+    /* Tabela de Horas */
+    .tableHours{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden}
+    .tableHours th, .tableHours td{padding:10px 12px; border-bottom:1px solid var(--border); text-align:right; font-size:13px}
+    .tableHours th:first-child, .tableHours td:first-child{text-align:left}
+    .tableHours thead{background:#0e1626}
+    .tableHours tfoot td{font-weight:800}
   </style>
 </head>
 <body>
@@ -167,6 +161,33 @@
         <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
       </div>
 
+      <!-- ===== NOVO BLOCO: HORAS ACUMULADAS ===== -->
+      <div class="section" style="margin-top:22px">
+        <h2>Horas Acumuladas (Ano <span id="horasAno">—</span>)</h2>
+      </div>
+      <div id="horasWrap">
+        <table class="tableHours" id="horasTable">
+          <thead>
+            <tr>
+              <th>Aeronave</th>
+              <th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th>
+              <th>Jul</th><th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody><!-- linhas via JS --></tbody>
+          <tfoot>
+            <tr>
+              <td>Total da Frota</td>
+              <td id="sJan">0</td><td id="sFev">0</td><td id="sMar">0</td><td id="sAbr">0</td><td id="sMai">0</td><td id="sJun">0</td>
+              <td id="sJul">0</td><td id="sAgo">0</td><td id="sSet">0</td><td id="sOut">0</td><td id="sNov">0</td><td id="sDez">0</td>
+              <td id="sTot">0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <!-- ===== FIM HORAS ===== -->
+
       <!-- ====== BLOCO EXPORTÁVEL ====== -->
       <div id="exportArea">
         <!-- Programação -->
@@ -224,7 +245,6 @@
         <div id="pie_div"></div>
       </div>
 
-      <!-- Divisor + título -->
       <div class="divider"><span class="label">Indicadores de Disponibilidade</span></div>
 
       <!-- Gráfico barras -->
@@ -314,9 +334,7 @@
 
     google.charts.load('current', {'packages':['corechart']});
     const $ = s => document.querySelector(s);
-    const debounce = (fn,ms=350)=>{ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);}};
-    
-    /************** Auth helpers **************/
+    const debounce = (fn,ms=350)=>{ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);}};    
     const TOK_KEY='dash_t';
     function getToken(){ return localStorage.getItem(TOK_KEY)||''; }
     function setToken(t){ if(t) localStorage.setItem(TOK_KEY,t); else localStorage.removeItem(TOK_KEY); }
@@ -328,9 +346,7 @@
       const res = await fetch(API_URL+'?'+qp.toString());
       const json = await res.json();
       if (json && json.error === 'UNAUTHORIZED'){
-        setToken('');
-        showLogin();
-        throw new Error('UNAUTHORIZED');
+        setToken(''); showLogin(); throw new Error('UNAUTHORIZED');
       }
       return json;
     }
@@ -347,7 +363,6 @@
       }
       return false;
     }
-
     async function login(){
       const email=$('#lgEmail').value.trim();
       const password=$('#lgPass').value;
@@ -356,34 +371,17 @@
         const r = await apiFetch({fn:'login', email, password});
         const data = r.data || {};
         if (!data.ok){ $('#lgErr').textContent = data.error || 'Falha no login'; return; }
-        setToken(data.token);
-        $('#lgPass').value='';
-        showDash();
-        await refreshAll();
-      }catch(err){
-        $('#lgErr').textContent = 'Erro ao autenticar';
-      }
+        setToken(data.token); $('#lgPass').value=''; showDash(); await refreshAll();
+      }catch(err){ $('#lgErr').textContent = 'Erro ao autenticar'; }
     }
-
     async function logout(){
-      const t=getToken();
-      if(t){ await apiFetch({fn:'logout'}).catch(()=>{}); }
-      setToken('');
-      $('#userEmail').style.display='none';
-      $('#btnLogout').style.display='none';
-      showLogin();
+      const t=getToken(); if(t){ await apiFetch({fn:'logout'}).catch(()=>{}); }
+      setToken(''); $('#userEmail').style.display='none'; $('#btnLogout').style.display='none'; showLogin();
     }
+    function showLogin(){ $('#loginBox').style.display='block'; $('#dashWrap').style.display='none'; }
+    function showDash(){ $('#loginBox').style.display='none'; $('#dashWrap').style.display='block'; }
 
-    function showLogin(){
-      $('#loginBox').style.display='block';
-      $('#dashWrap').style.display='none';
-    }
-    function showDash(){
-      $('#loginBox').style.display='none';
-      $('#dashWrap').style.display='block';
-    }
-
-    /************** MultiSelect helper **************/
+    /******** MultiSelect (igual ao seu) ********/
     function createMultiSelect(rootId, placeholder){
       const root = document.getElementById(rootId);
       const btn  = root.querySelector('.ms-btn');
@@ -392,65 +390,23 @@
       const list = root.querySelector(`#${rootId}_list`);
       const apply= root.querySelector(`#${rootId}_apply`);
       const clear= root.querySelector(`#${rootId}_clear`);
-
-      let items = []; // valores simples
-      let selected = new Set();
-
-      const updateBtn = ()=>{
-        if (selected.size===0) btn.querySelector('span').textContent = placeholder;
-        else if (selected.size===items.length) btn.querySelector('span').textContent = 'Todos';
-        else if (selected.size===1) btn.querySelector('span').textContent = [...selected][0];
-        else btn.querySelector('span').textContent = `${selected.size} selecionadas`;
-      };
-
-      const render = ()=>{
-        list.innerHTML = items.map(v=>`
-          <div class="ms-row">
-            <input type="checkbox" id="${rootId}_${v}" value="${v}" ${selected.has(v)?'checked':''}>
-            <label for="${rootId}_${v}">${v}</label>
-          </div>`).join('');
-        all.checked = selected.size===items.length && items.length>0;
-        updateBtn();
-      };
-
+      let items = []; let selected = new Set();
+      const updateBtn = ()=>{ if(selected.size===0) btn.querySelector('span').textContent=placeholder;
+        else if (selected.size===items.length) btn.querySelector('span').textContent='Todos';
+        else if (selected.size===1) btn.querySelector('span').textContent=[...selected][0];
+        else btn.querySelector('span').textContent=`${selected.size} selecionadas`; };
+      const render = ()=>{ list.innerHTML = items.map(v=>`<div class="ms-row"><input type="checkbox" id="${rootId}_${v}" value="${v}" ${selected.has(v)?'checked':''}><label for="${rootId}_${v}">${v}</label></div>`).join(''); all.checked = selected.size===items.length && items.length>0; updateBtn(); };
       btn.addEventListener('click', (e)=>{ e.stopPropagation(); root.classList.toggle('open'); });
-      document.addEventListener('click', ()=> root.classList.remove('open'));
-      panel.addEventListener('click', (e)=> e.stopPropagation());
-
-      all.addEventListener('change', ()=>{
-        if (all.checked){ selected = new Set(items); }
-        else { selected.clear(); }
-        render();
-      });
-
-      list.addEventListener('change', (e)=>{
-        if (e.target && e.target.type==='checkbox'){
-          const v=e.target.value;
-          if (e.target.checked) selected.add(v); else selected.delete(v);
-          all.checked = selected.size===items.length;
-          updateBtn();
-        }
-      });
-
+      document.addEventListener('click', ()=> root.classList.remove('open')); panel.addEventListener('click', (e)=> e.stopPropagation());
+      all.addEventListener('change', ()=>{ selected = all.checked ? new Set(items) : new Set(); render(); });
+      list.addEventListener('change', (e)=>{ if (e.target && e.target.type==='checkbox'){ const v=e.target.value; if (e.target.checked) selected.add(v); else selected.delete(v); all.checked = selected.size===items.length; updateBtn(); }});
       clear.addEventListener('click', ()=>{ selected.clear(); all.checked=false; render(); });
       apply.addEventListener('click', ()=>{ root.classList.remove('open'); refreshPareto(); });
-
-      return {
-        setItems(arr){ items=[...arr]; selected.clear(); render(); },
-        values(){ return [...selected]; },
-        setSelectedAll(){ selected=new Set(items); render(); },
-        setSelected(arr){
-          const set = new Set(arr||[]);
-          selected = new Set(items.filter(v => set.has(v)));
-          render();
-        }
-      };
+      return { setItems(arr){ items=[...arr]; selected.clear(); render(); }, values(){ return [...selected]; }, setSelected(arr){ const set = new Set(arr||[]); selected = new Set(items.filter(v => set.has(v))); render(); } };
     }
-
     const msBases    = createMultiSelect('msBases','Todas as Bases');
     const msPrefixos = createMultiSelect('msPrefixos','Todas as Aeronaves');
 
-    /************** UI helpers **************/
     function chip(status){
       const S = String(status||'').toUpperCase();
       if (S==='STAND BY') return '<span class="chip sb">STAND BY</span>';
@@ -459,7 +415,6 @@
       return `<span class="chip">${status||'-'}</span>`;
     }
 
-    // Render em FAIXAS HORIZONTAIS
     function renderListaGrouped(rows){
       const baseSel = $('#progBase').value || '';
       const norm = s => String(s||'').toLowerCase();
@@ -483,15 +438,11 @@
             </div>
             ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
           </div>`;
-        if (st==='STAND BY') SB.push(card);
-        else if (st==='MNT') MNT.push(card);
-        else MS.push(card);
+        if (st==='STAND BY') SB.push(card); else if (st==='MNT') MNT.push(card); else MS.push(card);
       }
-      // injeta nas listas horizontais
       $('#sbList').innerHTML  = SB.length ? SB.join('')  : `<div class="muted">—</div>`;
       $('#msList').innerHTML  = MS.length ? MS.join('')  : `<div class="muted">—</div>`;
       $('#mntList').innerHTML = MNT.length? MNT.join('') : `<div class="muted">—</div>`;
-      // contadores no cabeçalho de cada faixa
       $('#cntSB').textContent  = `(${SB.length})`;
       $('#cntMS').textContent  = `(${MS.length})`;
       $('#cntMNT').textContent = `(${MNT.length})`;
@@ -533,21 +484,54 @@
     }
     function drawPareto(rows){
       const dt = new google.visualization.DataTable();
-      dt.addColumn('string','Motivo');
-      dt.addColumn('number','Qtde');
-      dt.addColumn({type:'string', role:'annotation'});
+      dt.addColumn('string','Motivo'); dt.addColumn('number','Qtde'); dt.addColumn({type:'string', role:'annotation'});
       rows.forEach(r=> dt.addRow([r.Motivo, Number(r.Qtde||0), String(r.Qtde||0)]));
       const options = {
-        backgroundColor:'transparent',
-        legend:'none',
+        backgroundColor:'transparent', legend:'none',
         annotations:{ textStyle:{ color:'#e5e7eb', bold:true }},
         hAxis:{ textStyle:{ color:'#94a3b8' }, gridlines:{ color:'#1f2937' }, minValue:0 },
         vAxis:{ textStyle:{ color:'#94a3b8' } },
-        colors:['#ef4444'],
-        chartArea:{ left:120, top:10, right:20, height:260 },
-        height:360
+        colors:['#ef4444'], chartArea:{ left:120, top:10, right:20, height:260 }, height:360
       };
       new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
+    }
+
+    /* HORAS – renderização */
+    function renderHoras(data){
+      const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      $('#horasAno').textContent = data.ano || new Date().getFullYear();
+
+      const tb = $('#horasTable tbody');
+      tb.innerHTML = '';
+      const soma = Object.fromEntries(meses.map(m=>[m,0])); soma.Total=0;
+
+      data.rows.forEach(r=>{
+        const tr = document.createElement('tr');
+        const td0 = document.createElement('td'); td0.textContent = r.Aeronave || '-'; tr.appendChild(td0);
+        meses.forEach(m=>{
+          const td = document.createElement('td'); td.textContent = (r[m] ?? 0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); tr.appendChild(td);
+          soma[m] += Number(r[m]||0);
+        });
+        const tdT = document.createElement('td'); tdT.textContent = (r.Total ?? 0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); tr.appendChild(tdT);
+        soma.Total += Number(r.Total||0);
+        tb.appendChild(tr);
+      });
+
+      // rodapé
+      const id = m => document.getElementById('s'+m);
+      id('Jan').textContent = soma.Jan.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+      id('Fev').textContent = soma.Fev.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+      id('Mar').textContent = soma.Mar.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+      id('Abr').textContent = soma.Abr.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+      id('Mai').textContent = soma.Mai.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+      id('Jun').textContent = soma.Jun.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+      id('Jul').textContent = soma.Jul.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+      id('Ago').textContent = soma.Ago.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+      id('Set').textContent = soma.Set.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+      id('Out').textContent = soma.Out.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+      id('Nov').textContent = soma.Nov.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+      id('Dez').textContent = soma.Dez.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+      document.getElementById('sTot').textContent = soma.Total.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
     }
 
     /* Dashboard loader */
@@ -566,11 +550,13 @@
       const paretoBasesCSV    = msBases.values().join(',');
       const paretoPrefixosCSV = msPrefixos.values().join(',');
 
-      const qs = {
-        fn:'dashboard', date, status, search, range,
-        base, prefixos: prefixo, pieBase,
-        paretoBases: paretoBasesCSV, paretoPrefixos: paretoPrefixosCSV
-      };
+      // 1) HORAS (novo)
+      const h = await apiFetch({fn:'horas'});
+      if (h && h.ok) renderHoras(h.data);
+
+      // 2) RESTO DO DASH
+      const qs = { fn:'dashboard', date, status, search, range, base, prefixos: prefixo, pieBase,
+                   paretoBases: paretoBasesCSV, paretoPrefixos: paretoPrefixosCSV };
       const res = await apiFetch(qs);
       const data = res.data;
 
@@ -607,23 +593,11 @@
     $('#btnLogin').addEventListener('click', login);
     document.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && $('#loginBox').style.display!=='none') login(); });
 
-    $('#baseChart').addEventListener('change', ()=>{
-      const v = $('#baseChart').value;
-      msBases.setSelected(v ? [v] : []);
-      refreshAll();
-    });
-    $('#prefChart').addEventListener('change', ()=>{
-      const v = $('#prefChart').value;
-      msPrefixos.setSelected(v ? [v] : []);
-      refreshAll();
-    });
-
+    $('#baseChart').addEventListener('change', ()=>{ refreshAll(); });
+    $('#prefChart').addEventListener('change', ()=>{ refreshAll(); });
     $('#rangeSel').addEventListener('change', refreshAll);
     $('#pieBase').addEventListener('change', refreshAll);
-    $('#progBase').addEventListener('change', ()=>{
-      $('#pieBase').value = $('#progBase').value || '';
-      refreshAll();
-    });
+    $('#progBase').addEventListener('change', ()=>{ $('#pieBase').value = $('#progBase').value || ''; refreshAll(); });
 
     $('#paretoRangeSel').addEventListener('change', refreshPareto);
     $('#fBusca').addEventListener('input', debounce(refreshAll, 400));
@@ -634,36 +608,21 @@
       else { showLogin(); }
     })();
 
-    /* ====== Baixar PDF FULL-BLEED (sem bordas) ====== */
+    /* ====== Baixar PDF ====== */
     async function downloadPDF(){
       const node = document.getElementById('exportArea');
       await new Promise(r=>requestAnimationFrame(r));
-
-      // Render em alta escala para nitidez
       const scale = Math.max(2, (window.devicePixelRatio || 1)) * 1.25;
       const canvas = await html2canvas(node, {
         backgroundColor: getComputedStyle(document.body).backgroundColor || '#0b1320',
-        scale,
-        useCORS: true,
-        windowWidth: document.documentElement.clientWidth
+        scale, useCORS: true, windowWidth: document.documentElement.clientWidth
       });
-
       const imgData = canvas.toDataURL('image/png');
-      const w = canvas.width;
-      const h = canvas.height;
-
+      const w = canvas.width, h = canvas.height;
       const { jsPDF } = window.jspdf;
-
-      // Página do tamanho EXATO do canvas (sem margem)
-      const pdf = new jsPDF({
-        orientation: w >= h ? 'landscape' : 'portrait',
-        unit: 'pt',
-        format: [w, h]
-      });
-
+      const pdf = new jsPDF({ orientation: w>=h?'landscape':'portrait', unit:'pt', format:[w,h] });
       pdf.addImage(imgData, 'PNG', 0, 0, w, h, undefined, 'FAST');
-      const name = `Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`;
-      pdf.save(name);
+      pdf.save(`Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`);
     }
     document.getElementById('btnDownload').addEventListener('click', downloadPDF);
   </script>
