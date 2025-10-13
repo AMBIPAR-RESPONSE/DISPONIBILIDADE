@@ -53,9 +53,14 @@
     .section{display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px}
     .section h2{margin:0;font-size:18px}
 
-    .grid-3{display:grid;gap:14px}
-    @media(min-width:900px){.grid-3{grid-template-columns:repeat(3,1fr)}}
-    .col{display:flex;flex-direction:column;gap:14px}
+    /* === Programação em 3 colunas horizontais (sempre lado a lado) === */
+    #lista{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr); /* STAND BY | MISSÃO | MNT */
+      gap:14px;
+      align-items:flex-start;
+    }
+    .col{display:flex;flex-direction:column;gap:14px;min-width:0}
     .colTitle{display:flex;align-items:center;justify-content:space-between;color:#cbd5e1;margin-bottom:4px;font-weight:700;letter-spacing:.2px}
 
     .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
@@ -170,7 +175,9 @@
             </label>
           </div>
         </div>
-        <div id="lista" class="grid-3"></div>
+
+        <!-- 3 colunas lado a lado SEM rolagem -->
+        <div id="lista"></div>
 
         <!-- Pizza -->
         <div class="section">
@@ -423,6 +430,7 @@
       return `<span class="chip">${status||'-'}</span>`;
     }
 
+    // 3 colunas lado a lado SEM rolagem
     function renderListaGrouped(rows){
       const baseSel = $('#progBase').value || '';
       const norm = s => String(s||'').toLowerCase();
@@ -455,6 +463,7 @@
           <div class="colTitle">${title} <span class="muted">(${arr.length})</span></div>
           ${arr.length ? arr.join('') : `<div class="muted">—</div>`}
         </div>`;
+      // STAND BY | MISSÃO | MNT em HORIZONTAL
       $('#lista').innerHTML = col('STAND BY', SB) + col('EM MISSÃO', MS) + col('EM MANUTENÇÃO', MNT);
     }
 
@@ -595,11 +604,12 @@
       else { showLogin(); }
     })();
 
-    /* ====== Baixar PDF (com margens e proporção) ====== */
+    /* ====== Baixar PDF FULL-BLEED (sem bordas) ====== */
     async function downloadPDF(){
       const node = document.getElementById('exportArea');
       await new Promise(r=>requestAnimationFrame(r));
 
+      // Renderiza em alta escala pra nitidez
       const scale = Math.max(2, (window.devicePixelRatio || 1)) * 1.25;
       const canvas = await html2canvas(node, {
         backgroundColor: getComputedStyle(document.body).backgroundColor || '#0b1320',
@@ -608,37 +618,21 @@
         windowWidth: document.documentElement.clientWidth
       });
 
-      const imgWpx = canvas.width;
-      const imgHpx = canvas.height;
       const imgData = canvas.toDataURL('image/png');
+      const w = canvas.width;
+      const h = canvas.height;
 
       const { jsPDF } = window.jspdf;
 
-      // Decide orientação A4 automaticamente pelo aspecto do conteúdo
-      const orientation = imgWpx >= imgHpx ? 'landscape' : 'portrait';
-      const pdf = new jsPDF({ orientation, unit: 'pt', format: 'a4' });
+      // Cria um PDF do tamanho EXATO do canvas (sem margem/borda)
+      const pdf = new jsPDF({
+        orientation: w >= h ? 'landscape' : 'portrait',
+        unit: 'pt',
+        format: [w, h]
+      });
 
-      // Margens (pt) ~ 18mm
-      const MARGIN = 52; // 52pt ≈ 18,3mm
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const availW = pageW - MARGIN*2;
-      const availH = pageH - MARGIN*2;
-
-      // Escala para caber dentro da área útil mantendo proporção
-      const ratio = Math.min(availW / imgWpx, availH / imgHpx);
-      const drawW = imgWpx * ratio;
-      const drawH = imgHpx * ratio;
-
-      // Centraliza na página
-      const x = MARGIN + (availW - drawW) / 2;
-      const y = MARGIN + (availH - drawH) / 2;
-
-      // Fundo (opcional): ajuda a “respirar” no PDF mesmo com tema escuro
-      // pdf.setFillColor(15, 23, 42); // se quiser fundo escuro na página inteira
-      // pdf.rect(0, 0, pageW, pageH, 'F');
-
-      pdf.addImage(imgData, 'PNG', x, y, drawW, drawH, undefined, 'FAST');
+      // Full-bleed: ocupa 100% da página
+      pdf.addImage(imgData, 'PNG', 0, 0, w, h, undefined, 'FAST');
 
       const name = `Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`;
       pdf.save(name);
