@@ -344,16 +344,33 @@
     function setToken(t){ if(t) localStorage.setItem(TOK_KEY,t); else localStorage.removeItem(TOK_KEY); }
 
     async function apiFetch(params){
-      const qp = new URLSearchParams(params);
-      const t = getToken();
-      if (t) qp.set('t', t);
-      const res = await fetch(API_URL+'?'+qp.toString());
-      const json = await res.json();
-      if (json && json.error === 'UNAUTHORIZED'){
-        setToken(''); showLogin(); throw new Error('UNAUTHORIZED');
-      }
-      return json;
-    }
+  const qp = new URLSearchParams(params);
+  const t = getToken();
+  if (t) qp.set('t', t);
+
+  const url = API_URL + '?' + qp.toString();
+  let text;
+  try{
+    const res = await fetch(url, { cache: 'no-store' });
+    text = await res.text(); // pode vir HTML de erro → tratar
+  }catch(e){
+    throw new Error('Falha de rede ao acessar a API: ' + e.message);
+  }
+
+  let json;
+  try{
+    json = JSON.parse(text);
+  }catch(e){
+    // Quando a implantação está com permissão errada, o Apps Script devolve HTML
+    throw new Error('A API não retornou JSON. Verifique a URL/implantação. Resposta: ' + text.slice(0,200));
+  }
+
+  if (json && json.error === 'UNAUTHORIZED'){
+    setToken(''); showLogin(); throw new Error('UNAUTHORIZED');
+  }
+  return json;
+}
+
 
     async function checkMe(){
       const t=getToken(); if(!t) return false;
@@ -607,9 +624,23 @@
     $('#fStatus').addEventListener('change', refreshAll);
 
     (async function init(){
-      if (await checkMe()){ showDash(); await refreshAll(); }
-      else { showLogin(); }
-    })();
+  // padrão seguro: começa no login
+  showLogin();
+  try{
+    const ok = await checkMe();
+    if (ok){
+      showDash();
+      await refreshAll();
+    }else{
+      // mantém login visível
+    }
+  }catch(e){
+    console.error(e);
+    const el = document.getElementById('lgErr');
+    if (el) el.textContent = 'Erro ao conectar à API. Confira a URL e a implantação.';
+  }
+})();
+
 
     /* ====== Baixar PDF ====== */
     async function downloadPDF(){
