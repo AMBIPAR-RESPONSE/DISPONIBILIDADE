@@ -161,10 +161,15 @@
         <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
       </div>
 
-      <!-- ===== NOVO BLOCO: HORAS ACUMULADAS ===== -->
-      <div class="section" style="margin-top:22px">
-        <h2>Horas Acumuladas (Ano <span id="horasAno">—</span>)</h2>
+      <!-- ===== HORAS ACUMULADAS NO MÊS ===== -->
+      <div class="hgroup" id="horasList" style="margin-top:22px">
+        <div class="hline">
+          <span class="hlabel">Horas Acumuladas no Mês <span id="horasMes" class="muted"></span></span>
+          <span class="hdivider"></span>
+        </div>
+        <div class="hlist" id="horasCards"></div>
       </div>
+
       <div id="horasWrap">
         <table class="tableHours" id="horasTable">
           <thead>
@@ -496,26 +501,23 @@
       new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
     }
 
-    /* HORAS – renderização */
-    function renderHoras(data){
-      const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-      $('#horasAno').textContent = data.ano || new Date().getFullYear();
-
-      const tb = $('#horasTable tbody');
-      tb.innerHTML = '';
-      const soma = Object.fromEntries(meses.map(m=>[m,0])); soma.Total=0;
-
-      data.rows.forEach(r=>{
-        const tr = document.createElement('tr');
-        const td0 = document.createElement('td'); td0.textContent = r.Aeronave || '-'; tr.appendChild(td0);
-        meses.forEach(m=>{
-          const td = document.createElement('td'); td.textContent = (r[m] ?? 0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); tr.appendChild(td);
-          soma[m] += Number(r[m]||0);
-        });
-        const tdT = document.createElement('td'); tdT.textContent = (r.Total ?? 0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); tr.appendChild(tdT);
-        soma.Total += Number(r.Total||0);
-        tb.appendChild(tr);
-      });
+  function renderHoras(data){
+    $('#horasMes').textContent = data.mes || '';
+    const wrap = $('#horasCards');
+    if (!data.rows || !data.rows.length){
+      wrap.innerHTML = `<div class="muted">Sem dados para este mês.</div>`;
+      return;
+    }
+    wrap.innerHTML = data.rows.map(r => `
+      <div class="card">
+        <div class="title">
+          <div class="prefixo">${r.Aeronave}</div>
+          <span class="chip sb">${r.Horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>
+      </div>
+    </div>
+  `).join('');
+}
+ 
 
       // rodapé
       const id = m => document.getElementById('s'+m);
@@ -551,8 +553,10 @@
       const paretoPrefixosCSV = msPrefixos.values().join(',');
 
       // 1) HORAS (novo)
-      const h = await apiFetch({fn:'horas'});
+      const date = $('#fData').value || '';
+      const h = await apiFetch({fn:'horas', date});
       if (h && h.ok) renderHoras(h.data);
+
 
       // 2) RESTO DO DASH
       const qs = { fn:'dashboard', date, status, search, range, base, prefixos: prefixo, pieBase,
