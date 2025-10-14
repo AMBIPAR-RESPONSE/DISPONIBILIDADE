@@ -8,8 +8,10 @@
   <!-- Fontes & Ícones -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet" />
+
   <!-- Google Charts -->
   <script src="https://www.gstatic.com/charts/loader.js"></script>
+
   <!-- Export helpers -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -17,8 +19,7 @@
   <style>
     :root{
       --bg:#0b1320; --card:#111827; --muted:#94a3b8; --text:#e5e7eb; --border:#1f2937;
-      --brand:#22c55e; --brand-2:#3b82f6; --danger:#ef4444; --chip:#0f172a;
-      --line:#1f2937;
+      --brand:#22c55e; --brand-2:#3b82f6; --danger:#ef4444; --chip:#0f172a; --line:#1f2937;
     }
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
@@ -89,13 +90,6 @@
     .ms-footer button{height:34px;padding:0 12px}
 
     #exportArea{background:var(--bg); padding:0 0 10px 0;}
-
-    /* Tabela de Horas */
-    .tableHours{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden}
-    .tableHours th, .tableHours td{padding:10px 12px; border-bottom:1px solid var(--border); text-align:right; font-size:13px}
-    .tableHours th:first-child, .tableHours td:first-child{text-align:left}
-    .tableHours thead{background:#0e1626}
-    .tableHours tfoot td{font-weight:800}
   </style>
 </head>
 <body>
@@ -106,12 +100,8 @@
       <div class="topRight">
         <span id="userEmail" class="muted" style="display:none"></span>
         <button id="btnLogout" class="btn" style="display:none"><span class="material-symbols-rounded">logout</span> Sair</button>
-        <button id="btnDownload" class="btn">
-          <span class="material-symbols-rounded">download</span> Baixar
-        </button>
-        <a class="muted" href="#" id="btnRefresh" title="Atualizar">
-          <span class="material-symbols-rounded">refresh</span>
-        </a>
+        <button id="btnDownload" class="btn"><span class="material-symbols-rounded">download</span> Baixar</button>
+        <a class="muted" href="#" id="btnRefresh" title="Atualizar"><span class="material-symbols-rounded">refresh</span></a>
       </div>
     </div>
   </div>
@@ -161,7 +151,7 @@
         <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
       </div>
 
-      <!-- ===== HORAS ACUMULADAS NO MÊS ===== -->
+      <!-- ===== HORAS ACUMULADAS NO MÊS (CARDS) ===== -->
       <div class="hgroup" id="horasList" style="margin-top:22px">
         <div class="hline">
           <span class="hlabel">Horas Acumuladas no Mês <span id="horasMes" class="muted"></span></span>
@@ -170,28 +160,6 @@
         <div class="hlist" id="horasCards"></div>
       </div>
 
-      <div id="horasWrap">
-        <table class="tableHours" id="horasTable">
-          <thead>
-            <tr>
-              <th>Aeronave</th>
-              <th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th>
-              <th>Jul</th><th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody><!-- linhas via JS --></tbody>
-          <tfoot>
-            <tr>
-              <td>Total da Frota</td>
-              <td id="sJan">0</td><td id="sFev">0</td><td id="sMar">0</td><td id="sAbr">0</td><td id="sMai">0</td><td id="sJun">0</td>
-              <td id="sJul">0</td><td id="sAgo">0</td><td id="sSet">0</td><td id="sOut">0</td><td id="sNov">0</td><td id="sDez">0</td>
-              <td id="sTot">0</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      <!-- ===== FIM HORAS ===== -->
       <!-- ====== BLOCO EXPORTÁVEL ====== -->
       <div id="exportArea">
         <!-- Programação -->
@@ -332,45 +300,44 @@
   </div>
 
   <script>
-    // ======= CONFIGURE AQUI =======
+    // ======= CONFIGURAÇÃO =======
     const API_URL = 'https://script.google.com/macros/s/AKfycbwr03iuVk-4Q-7mnJwJtwlDvMfJ7V5vIg9FTdyiojiYrSsWvNfx4QcV3xFmzhhf4JCd/exec';
-    // ==============================
+    // ============================
 
     google.charts.load('current', {'packages':['corechart']});
     const $ = s => document.querySelector(s);
-    const debounce = (fn,ms=350)=>{ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);}};    
+    const debounce = (fn,ms=350)=>{ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);}};
     const TOK_KEY='dash_t';
     function getToken(){ return localStorage.getItem(TOK_KEY)||''; }
     function setToken(t){ if(t) localStorage.setItem(TOK_KEY,t); else localStorage.removeItem(TOK_KEY); }
 
+    // fetch com proteção contra HTML de erro da implantação
     async function apiFetch(params){
-  const qp = new URLSearchParams(params);
-  const t = getToken();
-  if (t) qp.set('t', t);
+      const qp = new URLSearchParams(params);
+      const t = getToken();
+      if (t) qp.set('t', t);
 
-  const url = API_URL + '?' + qp.toString();
-  let text;
-  try{
-    const res = await fetch(url, { cache: 'no-store' });
-    text = await res.text(); // pode vir HTML de erro → tratar
-  }catch(e){
-    throw new Error('Falha de rede ao acessar a API: ' + e.message);
-  }
+      const url = API_URL + '?' + qp.toString();
+      let text;
+      try{
+        const res = await fetch(url, { cache: 'no-store' });
+        text = await res.text();
+      }catch(e){
+        throw new Error('Falha de rede ao acessar a API: ' + e.message);
+      }
 
-  let json;
-  try{
-    json = JSON.parse(text);
-  }catch(e){
-    // Quando a implantação está com permissão errada, o Apps Script devolve HTML
-    throw new Error('A API não retornou JSON. Verifique a URL/implantação. Resposta: ' + text.slice(0,200));
-  }
+      let json;
+      try{
+        json = JSON.parse(text);
+      }catch(e){
+        throw new Error('A API não retornou JSON. Verifique a URL/implantação. Resposta: ' + text.slice(0,200));
+      }
 
-  if (json && json.error === 'UNAUTHORIZED'){
-    setToken(''); showLogin(); throw new Error('UNAUTHORIZED');
-  }
-  return json;
-}
-
+      if (json && json.error === 'UNAUTHORIZED'){
+        setToken(''); showLogin(); throw new Error('UNAUTHORIZED');
+      }
+      return json;
+    }
 
     async function checkMe(){
       const t=getToken(); if(!t) return false;
@@ -402,7 +369,7 @@
     function showLogin(){ $('#loginBox').style.display='block'; $('#dashWrap').style.display='none'; }
     function showDash(){ $('#loginBox').style.display='none'; $('#dashWrap').style.display='block'; }
 
-    /******** MultiSelect (igual ao seu) ********/
+    /* ===== MultiSelect ===== */
     function createMultiSelect(rootId, placeholder){
       const root = document.getElementById(rootId);
       const btn  = root.querySelector('.ms-btn');
@@ -517,39 +484,22 @@
       new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
     }
 
-  function renderHoras(data){
-    $('#horasMes').textContent = data.mes || '';
-    const wrap = $('#horasCards');
-    if (!data.rows || !data.rows.length){
-      wrap.innerHTML = `<div class="muted">Sem dados para este mês.</div>`;
-      return;
-    }
-    wrap.innerHTML = data.rows.map(r => `
-      <div class="card">
-        <div class="title">
-          <div class="prefixo">${r.Aeronave}</div>
-          <span class="chip sb">${r.Horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>
-      </div>
-    </div>
-  `).join('');
-}
- 
-
-      // rodapé
-      const id = m => document.getElementById('s'+m);
-      id('Jan').textContent = soma.Jan.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
-      id('Fev').textContent = soma.Fev.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
-      id('Mar').textContent = soma.Mar.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
-      id('Abr').textContent = soma.Abr.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
-      id('Mai').textContent = soma.Mai.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
-      id('Jun').textContent = soma.Jun.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
-      id('Jul').textContent = soma.Jul.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
-      id('Ago').textContent = soma.Ago.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
-      id('Set').textContent = soma.Set.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
-      id('Out').textContent = soma.Out.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
-      id('Nov').textContent = soma.Nov.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
-      id('Dez').textContent = soma.Dez.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
-      document.getElementById('sTot').textContent = soma.Total.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+    /* HORAS – cards por mês */
+    function renderHoras(data){
+      $('#horasMes').textContent = data.mes || '';
+      const wrap = $('#horasCards');
+      if (!data.rows || !data.rows.length){
+        wrap.innerHTML = `<div class="muted">Sem dados para este mês.</div>`;
+        return;
+      }
+      wrap.innerHTML = data.rows.map(r => `
+        <div class="card">
+          <div class="title">
+            <div class="prefixo">${r.Aeronave}</div>
+            <span class="chip sb">${Number(r.Horas||0).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>
+          </div>
+        </div>
+      `).join('');
     }
 
     /* Dashboard loader */
@@ -569,10 +519,8 @@
       const paretoPrefixosCSV = msPrefixos.values().join(',');
 
       // 1) HORAS (novo)
-      const date = $('#fData').value || '';
       const h = await apiFetch({fn:'horas', date});
       if (h && h.ok) renderHoras(h.data);
-
 
       // 2) RESTO DO DASH
       const qs = { fn:'dashboard', date, status, search, range, base, prefixos: prefixo, pieBase,
@@ -624,23 +572,17 @@
     $('#fStatus').addEventListener('change', refreshAll);
 
     (async function init(){
-  // padrão seguro: começa no login
-  showLogin();
-  try{
-    const ok = await checkMe();
-    if (ok){
-      showDash();
-      await refreshAll();
-    }else{
-      // mantém login visível
-    }
-  }catch(e){
-    console.error(e);
-    const el = document.getElementById('lgErr');
-    if (el) el.textContent = 'Erro ao conectar à API. Confira a URL e a implantação.';
-  }
-})();
-
+      // começa mostrando o login; se token válido, troca para dash
+      showLogin();
+      try{
+        const ok = await checkMe();
+        if (ok){ showDash(); await refreshAll(); }
+      }catch(e){
+        console.error(e);
+        const el = document.getElementById('lgErr');
+        if (el) el.textContent = 'Erro ao conectar à API. Confira a URL e a implantação.';
+      }
+    })();
 
     /* ====== Baixar PDF ====== */
     async function downloadPDF(){
