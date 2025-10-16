@@ -154,44 +154,37 @@
 
       <!-- ====== BLOCO EXPORTÁVEL ====== -->
       <div id="exportArea">
-        <!-- Programação -->
-        <div class="section">
-          <h2>Programação</h2>
-          <div class="row">
-            <label>Base
-              <select id="progBase" style="min-width:180px">
-                <option value="">Todas</option>
-              </select>
-            </label>
-          </div>
-        </div>
 
-        <!-- FAIXA: STAND BY -->
-        <div class="hgroup">
-          <div class="hline">
-            <span class="hlabel">STAND BY <span class="muted" id="cntSB">(0)</span></span>
-            <span class="hdivider"></span>
-          </div>
-          <div class="hlist" id="sbList"></div>
-        </div>
+      <!-- Programação -->
+      <div class="section">
+        <h2>Programação</h2>
+        <div class="row">
+          <label>Base
+            <select id="progBase" style="min-width:180px">
+        <option value="">Todas</option>
+      </select>
+    </label>
+  </div>
+</div>
 
-        <!-- FAIXA: EM MISSÃO -->
-        <div class="hgroup">
-          <div class="hline">
-            <span class="hlabel">EM MISSÃO <span class="muted" id="cntMS">(0)</span></span>
-            <span class="hdivider"></span>
-          </div>
-          <div class="hlist" id="msList"></div>
-        </div>
+<!-- FAIXA: DISPONÍVEL (STAND BY + EM MISSÃO) -->
+<div class="hgroup">
+  <div class="hline">
+    <span class="hlabel">DISPONÍVEL <span class="muted" id="cntDISP">(0)</span></span>
+    <span class="hdivider"></span>
+  </div>
+  <div class="hlist" id="dispList"></div>
+</div>
 
-        <!-- FAIXA: EM MANUTENÇÃO -->
-        <div class="hgroup">
-          <div class="hline">
-            <span class="hlabel">EM MANUTENÇÃO <span class="muted" id="cntMNT">(0)</span></span>
-            <span class="hdivider"></span>
-          </div>
-          <div class="hlist" id="mntList"></div>
-        </div>
+<!-- FAIXA: INDISPONÍVEL (MNT) -->
+<div class="hgroup">
+  <div class="hline">
+    <span class="hlabel">INDISPONÍVEL <span class="muted" id="cntIND">(0)</span></span>
+    <span class="hdivider"></span>
+  </div>
+  <div class="hlist" id="indList"></div>
+</div>
+
 
         <!-- Pizza -->
         <div class="section">
@@ -393,54 +386,65 @@
 
     function chip(status){
       const S = String(status||'').toUpperCase();
-      if (S==='STAND BY') return '<span class="chip sb">STAND BY</span>';
-      if (S==='MISSÃO' || S==='MISSAO') return '<span class="chip ms">MISSÃO</span>';
-      if (S==='MNT') return '<span class="chip mt">MNT</span>';
+      if (S==='STAND BY') return '<span class="chip sb">DISPONÍVEL</span>';
+      if (S==='MISSÃO' || S==='MISSAO') return '<span class="chip ms">EM MISSÃO</span>';
+      if (S==='MNT') return '<span class="chip mt">INDISPONÍVEL</span>';
       return `<span class="chip">${status||'-'}</span>`;
-    }
+}
+
 
     // Lista de cartões (com horas do mês no cabeçalho)
+    
     function renderListaGrouped(rows){
-      const baseSel = $('#progBase').value || '';
-      const norm = s => String(s||'').toLowerCase();
-      const SB=[], MS=[], MNT=[];
-      for(const r of rows){
-        if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
-        const st = String(r.Status||'').toUpperCase();
+  const baseSel = $('#progBase').value || '';
+  const norm = s => String(s||'').toLowerCase();
 
-        const horas = getHoras(r.Prefixo);
-        const horasChip = horas > 0
-          ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
-          : '';
+  // agora só 2 grupos
+  const DISP = []; // STAND BY + MISSÃO
+  const IND  = []; // MNT
 
-        const card = `
-          <div class="card">
-            <div class="title">
-              <div class="prefixo">${r.Prefixo||'-'}</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                ${horasChip}
-                ${chip(r.Status)}
-              </div>
-            </div>
-            <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
-            <div class="meta">
-              <div><b>Missão:</b> ${r.Missao||'-'}</div>
-              <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
-              <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
-              ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
-              ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
-            </div>
-            ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
-          </div>`;
-        if (st==='STAND BY') SB.push(card); else if (st==='MNT') MNT.push(card); else MS.push(card);
-      }
-      $('#sbList').innerHTML  = SB.length ? SB.join('')  : `<div class="muted">—</div>`;
-      $('#msList').innerHTML  = MS.length ? MS.join('')  : `<div class="muted">—</div>`;
-      $('#mntList').innerHTML = MNT.length? MNT.join('') : `<div class="muted">—</div>`;
-      $('#cntSB').textContent  = `(${SB.length})`;
-      $('#cntMS').textContent  = `(${MS.length})`;
-      $('#cntMNT').textContent = `(${MNT.length})`;
-    }
+  for (const r of rows){
+    if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
+    const st = String(r.Status||'').toUpperCase();
+
+    const horas = getHoras(r.Prefixo);
+    const horasChip = horas > 0
+      ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
+      : '';
+
+    const card = `
+      <div class="card">
+        <div class="title">
+          <div class="prefixo">${r.Prefixo||'-'}</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${horasChip}
+            ${chip(r.Status)}
+          </div>
+        </div>
+        <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
+        <div class="meta">
+          <div><b>Missão:</b> ${r.Missao||'-'}</div>
+          <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
+          <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
+          ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
+          ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
+        </div>
+        ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
+      </div>`;
+
+    if (st==='MNT') IND.push(card);
+    else           DISP.push(card);  // STAND BY e MISSÃO entram aqui
+  }
+
+  // escreve nas novas listas
+  $('#dispList').innerHTML = DISP.length ? DISP.join('') : `<div class="muted">—</div>`;
+  $('#indList').innerHTML  = IND.length  ? IND.join('')  : `<div class="muted">—</div>`;
+
+  // contadores
+  $('#cntDISP').textContent = `(${DISP.length})`;
+  $('#cntIND').textContent  = `(${IND.length})`;
+}
+
 
     /* Charts */
     function drawColumns(rows, isMonthly){
