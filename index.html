@@ -147,10 +147,23 @@
 
       <!-- KPIs -->
       <div class="kpis">
-        <div class="kpi"><div class="icon i-green">✓</div><div><h3>Disponíveis</h3><div class="val" id="kDisp">—</div></div></div>
-        <div class="kpi"><div class="icon i-blue">✈</div><div><h3>Em Missão</h3><div class="val" id="kMissao">—</div></div></div>
-        <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
-      </div>
+        <div class="kpi">
+          <div class="icon i-green">✓</div>
+          <div><h3>Disponíveis</h3><div class="val" id="kDisp">—</div></div>
+        </div>
+
+  <div class="kpi">
+    <div class="icon i-red">⛔</div>
+    <div><h3>Indisponíveis</h3><div class="val" id="kInd">—</div></div>
+  </div>
+
+  <div class="kpi">
+    <div class="icon i-blue">⏱</div>
+    <div><h3>Horas no mês</h3><div class="val" id="kHoras">—</div></div>
+  </div>
+</div>
+
+      
 
       <!-- ====== BLOCO EXPORTÁVEL ====== -->
       <div id="exportArea">
@@ -540,9 +553,16 @@
       }
 
       renderListaGrouped(data.list);
-      $('#kDisp').textContent    = data.kpis.disponiveis ?? '0';
-      $('#kMissao').textContent  = data.kpis.missao ?? '0';
-      $('#kMnt').textContent     = data.kpis.manutencao ?? '0';
+      // Somatório das horas do mês (já carregadas em HORAS_MAP pelo endpoint `horas`)
+      const totalHoras = Object.values(HORAS_MAP)
+        .reduce((acc, v) => acc + (Number(v) || 0), 0);
+
+      $('#kDisp').textContent  = data.kpis.disponiveis ?? '0';   // missão já entra como disponível
+      $('#kInd').textContent   = data.kpis.manutencao ?? '0';    // indisponíveis = em manutenção
+      $('#kHoras').textContent = totalHoras.toLocaleString('pt-BR', {
+        minimumFractionDigits: 1, maximumFractionDigits: 1
+      });
+
 
       google.charts.setOnLoadCallback(()=> {
         drawPie(data.pie, date);
