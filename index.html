@@ -619,45 +619,54 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
       }
     })();
 
-    /* ====== Baixar PDF ====== */
-    async function downloadPDF(){
-  // agora exporta Filtros + KPIs + Programação
-  const node = document.getElementById('exportRoot');
+/* ====== Baixar PDF ====== */
+async function downloadPDF(){
+  try{
+    // usa exportRoot; se não existir, cai para exportArea
+    const node = document.getElementById('exportRoot') || document.getElementById('exportArea');
+    if (!node) { alert('Não encontrei a área a exportar (exportRoot/exportArea).'); return; }
 
-  // espera um frame p/ layout estabilizar
-  await new Promise(r=>requestAnimationFrame(r));
+    if (!window.html2canvas) { alert('html2canvas não carregado.'); return; }
+    if (!window.jspdf || !window.jspdf.jsPDF) { alert('jsPDF não carregado.'); return; }
 
-  // render em alta resolução
-  const scale = Math.max(2, (window.devicePixelRatio || 1)) * 1.25;
-  const canvas = await html2canvas(node, {
-    backgroundColor: getComputedStyle(document.body).backgroundColor || '#0b1320',
-    scale,
-    useCORS: true,
-    windowWidth: document.documentElement.clientWidth
-  });
+    // espera layout estabilizar (gráficos etc.)
+    await new Promise(r=>requestAnimationFrame(r));
 
-  const imgData = canvas.toDataURL('image/png');
-  const w = canvas.width;
-  const h = canvas.height;
+    // render em alta resolução
+    const scale = Math.max(2, (window.devicePixelRatio || 1)) * 1.25;
+    const canvas = await html2canvas(node, {
+      backgroundColor: getComputedStyle(document.body).backgroundColor || '#0b1320',
+      scale,
+      useCORS: true,
+      windowWidth: Math.max(document.documentElement.clientWidth, node.scrollWidth)
+    });
 
-  // === margem bonita no PDF ===
-  const margin = 36; // ~0.5" em pontos
-  const pdfW = w + margin*2;
-  const pdfH = h + margin*2;
+    const imgData = canvas.toDataURL('image/png');
+    const w = canvas.width, h = canvas.height;
 
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({
-    orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
-    unit: 'pt',
-    format: [pdfW, pdfH]
-  });
+    // margem bonita ~0.5"
+    const margin = 36;
+    const pdfW = w + margin * 2;
+    const pdfH = h + margin * 2;
 
-  // desenha a imagem com margem
-  pdf.addImage(imgData, 'PNG', margin, margin, w, h, undefined, 'FAST');
-  pdf.save(`Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
+      unit: 'pt',
+      format: [pdfW, pdfH]
+    });
+
+    pdf.addImage(imgData, 'PNG', margin, margin, w, h, undefined, 'FAST');
+    pdf.save(`Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`);
+  }catch(err){
+    console.error('Erro ao gerar PDF:', err);
+    alert('Não foi possível gerar o PDF. Veja o console (F12) para detalhes.');
+  }
 }
 
-    document.getElementById('btnDownload').addEventListener('click', downloadPDF);
-  </script>
+// liga o botão (uma vez só)
+const btnDl = document.getElementById('btnDownload');
+if (btnDl) btnDl.onclick = downloadPDF;
+
 </body>
 </html>
