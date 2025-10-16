@@ -621,20 +621,42 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
 
     /* ====== Baixar PDF ====== */
     async function downloadPDF(){
-      const node = document.getElementById('exportArea');
-      await new Promise(r=>requestAnimationFrame(r));
-      const scale = Math.max(2, (window.devicePixelRatio || 1)) * 1.25;
-      const canvas = await html2canvas(node, {
-        backgroundColor: getComputedStyle(document.body).backgroundColor || '#0b1320',
-        scale, useCORS: true, windowWidth: document.documentElement.clientWidth
-      });
-      const imgData = canvas.toDataURL('image/png');
-      const w = canvas.width, h = canvas.height;
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ orientation: w>=h?'landscape':'portrait', unit:'pt', format:[w,h] });
-      pdf.addImage(imgData, 'PNG', 0, 0, w, h, undefined, 'FAST');
-      pdf.save(`Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`);
-    }
+  // agora exporta Filtros + KPIs + Programação
+  const node = document.getElementById('exportRoot');
+
+  // espera um frame p/ layout estabilizar
+  await new Promise(r=>requestAnimationFrame(r));
+
+  // render em alta resolução
+  const scale = Math.max(2, (window.devicePixelRatio || 1)) * 1.25;
+  const canvas = await html2canvas(node, {
+    backgroundColor: getComputedStyle(document.body).backgroundColor || '#0b1320',
+    scale,
+    useCORS: true,
+    windowWidth: document.documentElement.clientWidth
+  });
+
+  const imgData = canvas.toDataURL('image/png');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // === margem bonita no PDF ===
+  const margin = 36; // ~0.5" em pontos
+  const pdfW = w + margin*2;
+  const pdfH = h + margin*2;
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({
+    orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
+    unit: 'pt',
+    format: [pdfW, pdfH]
+  });
+
+  // desenha a imagem com margem
+  pdf.addImage(imgData, 'PNG', margin, margin, w, h, undefined, 'FAST');
+  pdf.save(`Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
     document.getElementById('btnDownload').addEventListener('click', downloadPDF);
   </script>
 </body>
