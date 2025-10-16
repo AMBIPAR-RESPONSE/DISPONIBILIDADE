@@ -66,6 +66,7 @@
     .prefixo{font-weight:800;font-size:18px}
     .chip{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--chip);border:1px solid var(--border)}
     .chip.sb{color:#34d399}.chip.ms{color:#60a5fa}.chip.mt{color:#f87171}
+    .chip.hr{background:rgba(34,197,94,.12); color:#34d399}
     .muted{color:var(--muted);font-size:12px}
     .meta{display:flex;gap:10px;flex-wrap:wrap;color:#cbd5e1;font-size:13px;margin-top:8px}
 
@@ -151,15 +152,7 @@
         <div class="kpi"><div class="icon i-red">🛠</div><div><h3>Em Manutenção</h3><div class="val" id="kMnt">—</div></div></div>
       </div>
 
-      <!-- ===== HORAS ACUMULADAS NO MÊS (CARDS) ===== -->
-      <div class="hgroup" id="horasList" style="margin-top:22px">
-        <div class="hline">
-          <span class="hlabel">Horas Acumuladas no Mês <span id="horasMes" class="muted"></span></span>
-          <span class="hdivider"></span>
-        </div>
-        <div class="hlist" id="horasCards"></div>
-      </div>
-
+      
       <!-- ====== BLOCO EXPORTÁVEL ====== -->
       <div id="exportArea">
         <!-- Programação -->
@@ -311,6 +304,9 @@
     function getToken(){ return localStorage.getItem(TOK_KEY)||''; }
     function setToken(t){ if(t) localStorage.setItem(TOK_KEY,t); else localStorage.removeItem(TOK_KEY); }
 
+    let HORAS_MAP = {};                         // ex.: { "PP-CBM": 20.5, "PS-PIP": 77.5 }
+    const getHoras = (pref) => Number(HORAS_MAP[String(pref||'').trim()] || 0);
+              
     // fetch com proteção contra HTML de erro da implantação
     async function apiFetch(params){
       const qp = new URLSearchParams(params);
@@ -403,38 +399,47 @@
       return `<span class="chip">${status||'-'}</span>`;
     }
 
-    function renderListaGrouped(rows){
-      const baseSel = $('#progBase').value || '';
-      const norm = s => String(s||'').toLowerCase();
-      const SB=[], MS=[], MNT=[];
-      for(const r of rows){
-        if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
-        const st = String(r.Status||'').toUpperCase();
-        const card = `
-          <div class="card">
-            <div class="title">
-              <div class="prefixo">${r.Prefixo||'-'}</div>
-              ${chip(r.Status)}
-            </div>
-            <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
-            <div class="meta">
-              <div><b>Missão:</b> ${r.Missao||'-'}</div>
-              <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
-              <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
-              ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
-              ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
-            </div>
-            ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
-          </div>`;
-        if (st==='STAND BY') SB.push(card); else if (st==='MNT') MNT.push(card); else MS.push(card);
-      }
-      $('#sbList').innerHTML  = SB.length ? SB.join('')  : `<div class="muted">—</div>`;
-      $('#msList').innerHTML  = MS.length ? MS.join('')  : `<div class="muted">—</div>`;
-      $('#mntList').innerHTML = MNT.length? MNT.join('') : `<div class="muted">—</div>`;
-      $('#cntSB').textContent  = `(${SB.length})`;
-      $('#cntMS').textContent  = `(${MS.length})`;
-      $('#cntMNT').textContent = `(${MNT.length})`;
-    }
+   function renderListaGrouped(rows){
+  const baseSel = $('#progBase').value || '';
+  const norm = s => String(s||'').toLowerCase();
+  const SB=[], MS=[], MNT=[];
+  for(const r of rows){
+    if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
+    const st = String(r.Status||'').toUpperCase();
+
+    const horas = getHoras(r.Prefixo); // horas do mês deste prefixo
+    const horasChip = horas > 0
+      ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
+      : '';
+
+    const card = `
+      <div class="card">
+        <div class="title">
+          <div class="prefixo">${r.Prefixo||'-'}</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${horasChip}
+            ${chip(r.Status)}
+          </div>
+        </div>
+        <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
+        <div class="meta">
+          <div><b>Missão:</b> ${r.Missao||'-'}</div>
+          <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
+          <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
+          ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
+          ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
+        </div>
+        ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
+      </div>`;
+    if (st==='STAND BY') SB.push(card); else if (st==='MNT') MNT.push(card); else MS.push(card);
+  }
+  $('#sbList').innerHTML  = SB.length ? SB.join('')  : `<div class="muted">—</div>`;
+  $('#msList').innerHTML  = MS.length ? MS.join('')  : `<div class="muted">—</div>`;
+  $('#mntList').innerHTML = MNT.length? MNT.join('') : `<div class="muted">—</div>`;
+  $('#cntSB').textContent  = `(${SB.length})`;
+  $('#cntMS').textContent  = `(${MS.length})`;
+  $('#cntMNT').textContent = `(${MNT.length})`;
+}
 
     /* Charts */
     function drawColumns(rows, isMonthly){
@@ -484,14 +489,7 @@
       new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
     }
 
-    /* HORAS – cards por mês */
-    function renderHoras(data){
-      $('#horasMes').textContent = data.mes || '';
-      const wrap = $('#horasCards');
-      if (!data.rows || !data.rows.length){
-        wrap.innerHTML = `<div class="muted">Sem dados para este mês.</div>`;
-        return;
-      }
+  
       wrap.innerHTML = data.rows.map(r => `
         <div class="card">
           <div class="title">
@@ -501,44 +499,63 @@
         </div>
       `).join('');
     }
+async function refreshAll(){
+  const date    = $('#fData').value || '';
+  const status  = $('#fStatus').value || '';
+  const search  = $('#fBusca').value || '';
+  const range   = $('#rangeSel').value || '30d';
+  const base    = $('#baseChart').value || '';
+  const prefixo = $('#prefChart').value || '';
 
-    /* Dashboard loader */
-    async function refreshAll(){
-      const date    = $('#fData').value || '';
-      const status  = $('#fStatus').value || '';
-      const search  = $('#fBusca').value || '';
-      const range   = $('#rangeSel').value || '30d';
-      const base    = $('#baseChart').value || '';
-      const prefixo = $('#prefChart').value || '';
+  const progBaseVal = $('#progBase').value || '';
+  const pieBaseSel  = $('#pieBase').value || '';
+  const pieBase     = progBaseVal !== '' ? progBaseVal : pieBaseSel;
 
-      const progBaseVal = $('#progBase').value || '';
-      const pieBaseSel  = $('#pieBase').value || '';
-      const pieBase     = progBaseVal !== '' ? progBaseVal : pieBaseSel;
+  const paretoBasesCSV    = msBases.values().join(',');
+  const paretoPrefixosCSV = msPrefixos.values().join(',');
 
-      const paretoBasesCSV    = msBases.values().join(',');
-      const paretoPrefixosCSV = msPrefixos.values().join(',');
+  // 1) HORAS DO MÊS → preencher mapa para usar nos cards da programação
+  HORAS_MAP = {};
+  try{
+    const h = await apiFetch({ fn:'horas', date }); // seu endpoint já retorna Aeronave/Horas do mês
+    if (h && h.ok && h.data && Array.isArray(h.data.rows)){
+      h.data.rows.forEach(r => {
+        HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0);
+      });
+    }
+  }catch(e){ /* deixa sem horas se falhar */ }
 
-      // 1) HORAS (novo)
-      const h = await apiFetch({fn:'horas', date});
-      if (h && h.ok) renderHoras(h.data);
+  // 2) RESTO DO DASH
+  const qs = { fn:'dashboard', date, status, search, range, base, prefixos: prefixo, pieBase,
+               paretoBases: paretoBasesCSV, paretoPrefixos: paretoPrefixosCSV };
+  const res = await apiFetch(qs);
+  const data = res.data;
 
-      // 2) RESTO DO DASH
-      const qs = { fn:'dashboard', date, status, search, range, base, prefixos: prefixo, pieBase,
-                   paretoBases: paretoBasesCSV, paretoPrefixos: paretoPrefixosCSV };
-      const res = await apiFetch(qs);
-      const data = res.data;
+  if ($('#baseChart').options.length<=1){
+    const basesOpt   = '<option value="">Todas</option>' + data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
+    const prefOpt    = '<option value="">Todas</option>' + data.lookups.prefixos.map(v=>`<option>${v}</option>`).join('');
+    $('#baseChart').innerHTML = basesOpt;
+    $('#pieBase').innerHTML   = basesOpt;
+    $('#progBase').innerHTML  = basesOpt;
+    $('#prefChart').innerHTML = prefOpt;
 
-      if ($('#baseChart').options.length<=1){
-        const basesOpt   = '<option value="">Todas</option>' + data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
-        const prefOpt    = '<option value="">Todas</option>' + data.lookups.prefixos.map(v=>`<option>${v}</option>`).join('');
-        $('#baseChart').innerHTML = basesOpt;
-        $('#pieBase').innerHTML   = basesOpt;
-        $('#progBase').innerHTML  = basesOpt;
-        $('#prefChart').innerHTML = prefOpt;
+    msBases.setItems(data.lookups.bases);
+    msPrefixos.setItems(data.lookups.prefixos);
+  }
 
-        msBases.setItems(data.lookups.bases);
-        msPrefixos.setItems(data.lookups.prefixos);
-      }
+  renderListaGrouped(data.list);
+  $('#kDisp').textContent    = data.kpis.disponiveis ?? '0';
+  $('#kMissao').textContent  = data.kpis.missao ?? '0';
+  $('#kMnt').textContent     = data.kpis.manutencao ?? '0';
+
+  google.charts.setOnLoadCallback(()=> {
+    drawPie(data.pie, date);
+    drawColumns(data.series, range==='12m');
+    drawPareto(data.pareto);
+  });
+}
+
+   
 
       renderListaGrouped(data.list);
       $('#kDisp').textContent    = data.kpis.disponiveis ?? '0';
