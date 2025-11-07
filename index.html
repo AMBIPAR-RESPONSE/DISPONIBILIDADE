@@ -108,6 +108,9 @@
     .modal label{ width:100%; }
     .modal .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px }
     .small{ font-size:13px; color:var(--muted) }
+
+    /* small fixes for selects inside modal */
+    .modal .input{ width:100%; box-sizing:border-box }
   </style>
 </head>
 <body>
@@ -179,6 +182,9 @@
   </div>
 </div>
 
+      
+
+
       <!-- ====== BLOCO EXPORTÁVEL ====== -->
       <div id="exportArea">
 
@@ -211,6 +217,7 @@
   </div>
   <div class="hlist" id="indList"></div>
 </div>
+
 
         <!-- Pizza -->
         <div class="section">
@@ -315,7 +322,8 @@
 
   <script>
     // ======= CONFIGURAÇÃO =======
-    const API_URL = 'https://script.google.com/macros/s/AKfycbz3iCMF44LtMRgWMo_oDsUiTK-T6a8oZQnrwHvYdwneSjDwPKzfkDhP8XntKCl3oUzd/exec';
+    // SUBSTITUA pela sua URL do Apps Script (Web App deploy). Atenção aos parâmetros de implantação (who has access).
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwGNWh1CxWxT_yA9E23V4j6ossYmOA1Tt2gn58Xp8DhY3vOGMGJjtiWuLZUn6gqiAY/exec';
     // ============================
 
     google.charts.load('current', {'packages':['corechart']});
@@ -418,9 +426,9 @@
 
     function chip(status){
       const S = String(status||'').toUpperCase();
-      if (S==='STAND BY') return '<span class="chip sb">DISPONÍVEL</span>';
+      if (S==='STAND BY' || S==='DISPONIVEL') return '<span class="chip sb">DISPONÍVEL</span>';
       if (S==='MISSÃO' || S==='MISSAO') return '<span class="chip ms">EM MISSÃO</span>';
-      if (S==='MNT') return '<span class="chip mt">INDISPONÍVEL</span>';
+      if (S==='MNT' || S==='INDISPONIVEL') return '<span class="chip mt">INDISPONÍVEL</span>';
       return `<span class="chip">${status||'-'}</span>`;
     }
 
@@ -462,7 +470,7 @@
         ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
       </div>`;
 
-    if (st==='MNT') IND.push(card);
+    if (st==='MNT' || st==='INDISPONIVEL') IND.push(card);
     else           DISP.push(card);
   }
 
@@ -570,29 +578,13 @@
 
       renderListaGrouped(data.list);
       // Total vindo do backend (deduplicado/filtrado). Fallback = soma do mapa.
-let totalHoras = 0;
-try{
-  const h = await apiFetch({ fn:'horas', date });
-  if (h && h.ok && h.data){
-    // preencher HORAS_MAP (para chips nos cards)
-    HORAS_MAP = {};
-    if (Array.isArray(h.data.rows)){
-      h.data.rows.forEach(r => {
-        HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0);
-      });
-    }
-    totalHoras = Number(h.data.total || 0);
-    if (!totalHoras){
-      totalHoras = Object.values(HORAS_MAP).reduce((acc,v)=>acc+(Number(v)||0),0);
-    }
-  }
-}catch(e){ /* mantém 0 em caso de erro */ }
+      let totalHoras = Object.values(HORAS_MAP).reduce((acc,v)=>acc+(Number(v)||0),0);
 
-$('#kDisp').textContent  = data.kpis.disponiveis ?? '0';
-$('#kInd').textContent   = data.kpis.manutencao ?? '0';
-$('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
-  minimumFractionDigits:1, maximumFractionDigits:1
-});
+      $('#kDisp').textContent  = data.kpis.disponiveis ?? '0';
+      $('#kInd').textContent   = data.kpis.manutencao ?? '0';
+      $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
+        minimumFractionDigits:1, maximumFractionDigits:1
+      });
 
       google.charts.setOnLoadCallback(()=> {
         drawPie(data.pie, date);
@@ -604,81 +596,109 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
 
     /* ===== Funções para alterar status via API (setstatus) ===== */
     async function setStatusPrefixo(prefixo, status, extras={}){
-      const params = Object.assign({ fn: 'setstatus', prefixo, status }, extras);
-      const r = await apiFetch(params);
-      if (!r || !r.ok) throw new Error((r && r.error) || 'Falha ao salvar');
-      return r.data;
+      // optimistic UI update
+      try {
+        const el = document.querySelector(`.prefixo[data-prefixo="${prefixo}"]`);
+        const card = el ? el.closest('.card') : null;
+        if (card) {
+          card.style.opacity = '0.6';
+          const topRight = card.querySelector('.title > div[style]');
+          if (topRight) {
+            topRight.querySelectorAll('.chip').forEach(c=>c.remove());
+            const stub = status === 'INDISPONIVEL' || status==='MNT' ? '<span class="chip mt">INDISPONÍVEL</span>' : '<span class="chip sb">DISPONÍVEL</span>';
+            topRight.insertAdjacentHTML('beforeend', stub);
+          }
+        }
+
+        const params = Object.assign({ fn: 'setstatus', prefixo, status }, extras);
+        const r = await apiFetch(params);
+        if (!r || !r.ok) throw new Error((r && r.error) || 'Falha ao salvar');
+
+        // success - gentle restore
+        if (card) { card.style.opacity = '1'; card.style.transition='background .25s'; setTimeout(()=>card.style.background='',250); }
+
+        return r.data;
+      } catch (err) {
+        alert('Erro ao salvar. O dashboard será atualizado. (' + (err.message||err) + ')');
+        await refreshAll();
+        throw err;
+      }
     }
 
-    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC + Motivo ===== */
+    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC + motivo categoria ===== */
     function buildModalHtml(prefixo, lookups){
       const missoes = (lookups && lookups.missoes) ? lookups.missoes : [];
       const cmtes   = (lookups && lookups.comandantes) ? lookups.comandantes : [];
       const mecs    = (lookups && lookups.mecanicos) ? lookups.mecanicos : [];
 
       return `
-        <div class="modal-backdrop" id="modalBackdrop">
-          <div class="modal" role="dialog" aria-modal="true">
-            <h3>Editar status — ${prefixo}</h3>
-            <div class="row">
-              <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
-              <div style="display:flex;gap:8px;margin-top:6px">
-                <button id="optDisponivel" class="btn primary">1 — Disponível</button>
-                <button id="optIndisponivel" class="btn">2 — Indisponível</button>
-              </div>
-            </div>
-
-            <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
-              <label style="flex:1 1 45%">Missão
-                <select id="selMissao" class="input">
-                  <option value="">— Selecione —</option>
-                  ${missoes.map(m => `<option>${m}</option>`).join('')}
-                  <option value="__OUTRO__">Outro (digitar)</option>
-                </select>
-                <input id="inpMissao" class="input" style="margin-top:6px;display:none" placeholder="Digite a missão">
-              </label>
-
-              <label style="flex:1 1 25%">Comandante
-                <select id="selCmte" class="input">
-                  <option value="">— Selecione —</option>
-                  ${cmtes.map(m => `<option>${m}</option>`).join('')}
-                  <option value="__OUTRO__">Outro (digitar)</option>
-                </select>
-                <input id="inpCmte" class="input" style="margin-top:6px;display:none" placeholder="Digite o comandante">
-              </label>
-
-              <label style="flex:1 1 25%">Mecânico
-                <select id="selMec" class="input">
-                  <option value="">— Selecione —</option>
-                  ${mecs.map(m => `<option>${m}</option>`).join('')}
-                  <option value="__OUTRO__">Outro (digitar)</option>
-                </select>
-                <input id="inpMec" class="input" style="margin-top:6px;display:none" placeholder="Digite o mecânico">
-              </label>
-            </div>
-
-            <div class="row" style="margin-top:8px;gap:8px;align-items:center">
-              <label style="flex:1 1 50%">Motivo da Indisponibilidade
-                <select id="selMotivo" class="input">
-                  <option value="">— Selecione —</option>
-                  <option value="Programada">Programada</option>
-                  <option value="Discrepância">Discrepância</option>
-                  <option value="Administrativa">Administrativa</option>
-                </select>
-              </label>
-
-              <label style="flex:1 1 50%">Observações
-                <input id="inpObs" class="input" placeholder="Observações (opcional)">
-              </label>
-            </div>
-
-            <div class="actions">
-              <button id="btnCancel" class="btn">Cancelar</button>
-              <button id="btnSave" class="btn primary">Salvar</button>
-            </div>
+    <div class="modal-backdrop" id="modalBackdrop">
+      <div class="modal" role="dialog" aria-modal="true">
+        <h3>Editar status — ${prefixo}</h3>
+        <div class="row">
+          <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button id="optDisponivel" class="btn primary">1 — Disponível</button>
+            <button id="optIndisponivel" class="btn">2 — Indisponível</button>
           </div>
         </div>
-      `;
+
+        <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
+          <label style="flex:1 1 45%">Missão
+            <select id="selMissao" class="input">
+              <option value="">— Selecione —</option>
+              ${missoes.map(m => `<option>${m}</option>`).join('')}
+              <option value="__OUTRO__">Outro (digitar)</option>
+            </select>
+            <input id="inpMissao" class="input" style="margin-top:6px;display:none" placeholder="Digite a missão">
+          </label>
+
+          <label style="flex:1 1 25%">Comandante
+            <select id="selCmte" class="input">
+              <option value="">— Selecione —</option>
+              ${cmtes.map(m => `<option>${m}</option>`).join('')}
+              <option value="__OUTRO__">Outro (digitar)</option>
+            </select>
+            <input id="inpCmte" class="input" style="margin-top:6px;display:none" placeholder="Digite o comandante">
+          </label>
+
+          <label style="flex:1 1 25%">Mecânico
+            <select id="selMec" class="input">
+              <option value="">— Selecione —</option>
+              ${mecs.map(m => `<option>${m}</option>`).join('')}
+              <option value="__OUTRO__">Outro (digitar)</option>
+            </select>
+            <input id="inpMec" class="input" style="margin-top:6px;display:none" placeholder="Digite o mecânico">
+          </label>
+        </div>
+
+        <div class="row" style="margin-top:8px;gap:8px">
+          <label style="flex:1">Motivo da indisponibilidade
+            <select id="selMotivoCat" class="input">
+              <option value="">— Categoria —</option>
+              <option value="Programada">Programada</option>
+              <option value="Discrepância">Discrepância</option>
+              <option value="Administrativa">Administrativa</option>
+            </select>
+          </label>
+          <label style="flex:1">Pré-motivo (opcional)
+            <input id="inpMotivo" class="input" placeholder="Descrição breve do motivo">
+          </label>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <label style="width:100%">Observações
+            <input id="inpObs" class="input" placeholder="Observações (opcional)">
+          </label>
+        </div>
+
+        <div class="actions">
+          <button id="btnCancel" class="btn">Cancelar</button>
+          <button id="btnSave" class="btn primary">Salvar</button>
+        </div>
+      </div>
+    </div>
+  `;
     }
 
     async function showEditModal(prefixo){
@@ -711,29 +731,29 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
       selCmte   && selCmte.addEventListener('change', ()=> { inpCmte.style.display   = selCmte.value==='__OUTRO__' ? 'block' : 'none'; });
       selMec    && selMec.addEventListener('change', ()=> { inpMec.style.display    = selMec.value==='__OUTRO__' ? 'block' : 'none'; });
 
-      // Buttons
       document.getElementById('btnCancel').addEventListener('click', ()=> { const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b); });
+
       document.getElementById('btnSave').addEventListener('click', async ()=>{
         const sDisp = document.getElementById('optDisponivel').classList.contains('primary');
-        // mapeamento para valores que o backend já trabalha
-        const statusMapped = sDisp ? 'STAND BY' : 'MNT';
+        const sInd  = document.getElementById('optIndisponivel').classList.contains('primary');
+        let status = sDisp ? 'DISPONIVEL' : (sInd ? 'INDISPONIVEL' : 'DISPONIVEL');
 
         const missao = (selMissao && selMissao.value === '__OUTRO__') ? (inpMissao.value.trim()||'') : (selMissao ? selMissao.value : '');
         const comandante = (selCmte && selCmte.value === '__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte ? selCmte.value : '');
         const mecanico = (selMec && selMec.value === '__OUTRO__') ? (inpMec.value.trim()||'') : (selMec ? selMec.value : '');
-        const motivo = (document.getElementById('selMotivo') ? document.getElementById('selMotivo').value : '');
         const obs = inpObs ? inpObs.value.trim() : '';
+        const motivo_categoria = document.getElementById('selMotivoCat') ? document.getElementById('selMotivoCat').value : '';
+        const motivo_text = document.getElementById('inpMotivo') ? document.getElementById('inpMotivo').value.trim() : '';
 
         try{
-          await setStatusPrefixo(prefixo, statusMapped, { missao, comandante, mecanico, motivo, obs });
+          await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, obs, motivo_categoria, motivo: motivo_text, date: $('#fData').value || '' });
           const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b);
-          await refreshAll();
+          await refreshCard(prefixo);
         }catch(err){
           alert('Erro ao salvar: ' + (err.message||err));
         }
       });
 
-      // Quick toggle behaviour
       const btnDisp = document.getElementById('optDisponivel');
       const btnInd  = document.getElementById('optIndisponivel');
       const setActive = (which)=>{
@@ -748,7 +768,42 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
       bp.addEventListener('click', (ev)=>{ if (ev.target === bp){ if (bp && bp.parentNode) bp.parentNode.removeChild(bp); } });
     }
 
-    // Delegação de clique: prefixos abrem modal
+    // atualiza só o card do prefixo (mais rápido que refreshAll)
+    async function refreshCard(prefixo){
+      try{
+        const res = await apiFetch({ fn: 'dashboard', date: $('#fData').value || '', search: prefixo });
+        if (!res || !res.ok || !res.data){ await refreshAll(); return; }
+        const rec = (res.data.list || []).find(r => (r.Prefixo||'') === prefixo);
+        if (!rec){ await refreshAll(); return; }
+
+        const el = document.querySelector(`.prefixo[data-prefixo="${prefixo}"]`);
+        if (!el){ await refreshAll(); return; }
+        const card = el.closest('.card');
+        if (!card) return;
+
+        const horas = getHoras(prefixo);
+        const horasChip = horas > 0 ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>` : '';
+        const chipHtml = (String(rec.Status||'').toUpperCase()==='MNT' || String(rec.Status||'').toUpperCase()==='INDISPONIVEL') ? '<span class="chip mt">INDISPONÍVEL</span>' : '<span class="chip sb">DISPONÍVEL</span>';
+        const topRight = card.querySelector('.title > div[style]');
+        if (topRight) topRight.innerHTML = `${horasChip}${chipHtml}`;
+
+        const meta = card.querySelector('.meta');
+        if (meta){
+          meta.innerHTML = `
+            <div><b>Missão:</b> ${rec.Missao||'-'}</div>
+            <div><b>CMTE:</b> ${rec.Comandante||'-'}</div>
+            <div><b>MEC:</b> ${rec.Mecanico||'-'}</div>
+            ${rec.Motivo_Manutencao ? `<div><b>Motivo:</b> ${rec.Motivo_Manutencao}</div>` : ``}
+            ${rec.Previsao ? `<div><b>Previsão:</b> ${rec.Previsao}</div>` : ``}
+          `;
+        }
+      }catch(e){
+        console.warn('refreshCard falhou, fazendo refreshAll', e);
+        await refreshAll();
+      }
+    }
+
+    // === Delegação de clique: garante que prefixos dinâmicos abram modal ===
     document.addEventListener('click', (ev) => {
       const el = ev.target.closest('.prefixo[data-prefixo]');
       if (!el) return;
@@ -776,11 +831,29 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
     $('#fStatus').addEventListener('change', refreshAll);
 
     (async function init(){
-      // começa mostrando o login; se token válido, troca para dash
+      // começa mostrando o login; se token válido, troca para dash e pré-carrega lookups/horas
       showLogin();
       try{
         const ok = await checkMe();
-        if (ok){ showDash(); await refreshAll(); }
+        if (ok){
+          // preload lookups
+          try{
+            const lk = await apiFetch({ fn: 'lookups' }).catch(()=>null);
+            if (lk && lk.ok && lk.data) LOOKUPS = lk.data;
+          }catch(e){ console.warn('Preload lookups falhou', e); }
+
+          // preload horas
+          try{
+            const d = $('#fData').value || new Date().toISOString().slice(0,10);
+            const h = await apiFetch({ fn: 'horas', date: d }).catch(()=>null);
+            if (h && h.ok && h.data && Array.isArray(h.data.rows)){
+              HORAS_MAP = {};
+              h.data.rows.forEach(r => HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0));
+            }
+          }catch(e){ console.warn('Preload horas falhou', e); }
+
+          showDash(); await refreshAll();
+        }
       }catch(e){
         console.error(e);
         const el = document.getElementById('lgErr');
