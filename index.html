@@ -18,7 +18,7 @@
 
   <style>
     :root{
-      --bg:#0b1320; --card:#0f1720; --muted:#94a3b8; --text:#e5e7eb; --border:#1f2937;
+      --bg:#0b1320; --card:#111827; --muted:#94a3b8; --text:#e5e7eb; --border:#1f2937;
       --brand:#22c55e; --brand-2:#3b82f6; --danger:#ef4444; --chip:#0f172a; --line:#1f2937;
     }
     *{box-sizing:border-box}
@@ -31,13 +31,14 @@
     .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
     .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 4px rgba(34,197,94,.25)}
     .spacer{flex:1}
-    .btn{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:#fff;display:flex;align-items:center;gap:8px;cursor:pointer}
+    .btn{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:#fff;display:flex;align-items:center;gap:8px;cursor:pointer}
     .btn.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
-    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04)}
 
     .filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-top:14px}
-    .input, select, button{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#071120;color:#e5e7eb}
+    .input, select, button{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:#e5e7eb}
     .input::placeholder{color:#64748b}
+    button.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
+    button.ghost{background:transparent;color:#9aa4b2}
     .row{display:flex;gap:12px;align-items:center}
     label{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:12px}
 
@@ -60,25 +61,26 @@
     .hdivider{height:4px;background:var(--line);border-radius:3px;flex:1}
 
     .hlist{display:flex;flex-wrap:wrap;gap:14px;align-items:stretch}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;min-width:260px;max-width:360px;flex:1 1 260px;box-shadow:0 3px 10px rgba(0,0,0,.25)}
-    .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-    .prefixo{font-weight:800;font-size:16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;min-width:260px;max-width:360px;flex:1 1 260px}
+    .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+    .prefixo{font-weight:800;font-size:18px}
     .chip{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--chip);border:1px solid var(--border)}
-    .chip.sb{color:#34d399;border-color:rgba(34,197,94,.18);background:rgba(34,197,94,.06)}
-    .chip.ms{color:#60a5fa;border-color:rgba(59,130,246,.18);background:rgba(59,130,246,.04)}
-    .chip.mt{color:#f87171;border-color:rgba(239,68,68,.18);background:rgba(239,68,68,.04)}
+    .chip.sb{color:#34d399}.chip.ms{color:#60a5f a}.chip.mt{color:#f87171}
     .chip.hr{background:rgba(34,197,94,.12); color:#34d399}
     .muted{color:var(--muted);font-size:12px}
-    .meta{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:13px;margin-top:8px}
+    .meta{display:flex;gap:10px;flex-wrap:wrap;color:#cbd5e1;font-size:13px;margin-top:8px}
 
     #chart_div{height:360px}
     #pie_div{height:260px}
     #pareto_div{height:360px}
     .foot{margin:28px 0;color:#64748b;font-size:12px;text-align:center}
 
+    .divider{margin:26px 0 8px;border-bottom:4px solid #1f2937;display:flex;align-items:center;gap:12px}
+    .divider .label{font-weight:800;letter-spacing:.3px;font-size:18px;color:#cbd5e1}
+
     /* MultiSelect */
     .ms{position:relative;min-width:220px}
-    .ms-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:220px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#071120;color:#e5e7eb;cursor:pointer}
+    .ms-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:220px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:#e5e7eb;cursor:pointer}
     .ms-panel{position:absolute;top:44px;left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;min-width:280px;max-height:280px;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.35);display:none;z-index:50}
     .ms.open .ms-panel{display:block}
     .ms-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
@@ -98,18 +100,16 @@
     .prefixo[data-prefixo]{ cursor:pointer; text-decoration:none; }
     .prefixo[data-prefixo]:hover{ text-decoration:underline; }
 
-    /* Modal simples */
+    /* Modal simples (vertical inputs) */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:2000; }
     .modal{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; width:520px; max-width:95%; color:var(--text); }
     .modal h3{ margin:0 0 8px 0; font-size:16px }
     .modal .row{ margin:8px 0; flex-direction:column; align-items:flex-start; gap:8px }
-    .modal label{ width:100%; display:block; font-size:13px; color:#cbd5e1; margin-bottom:6px}
+    .modal label{ width:100%; display:flex; flex-direction:column; gap:6px }
     .modal .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px }
     .small{ font-size:13px; color:var(--muted) }
 
-    /* stacked inputs in modal */
-    .modal .stack { display:flex; flex-direction:column; gap:10px; }
-    .modal select.input, .modal input.input { width:100%; box-sizing:border-box; }
+    .select{ height:40px; padding:0 12px; border-radius:8px; background:#0b1220; border:1px solid var(--border); color:var(--text) }
   </style>
 </head>
 <body>
@@ -127,7 +127,7 @@
   </div>
 
   <!-- LOGIN -->
-  <div id="loginBox" class="loginWrap" style="display:none; padding:24px;">
+  <div id="loginBox" class="loginWrap" style="display:none">
     <h1>Acesso restrito</h1>
     <label>Email
       <input id="lgEmail" class="input" type="email" placeholder="voce@empresa.com">
@@ -151,8 +151,8 @@
           <label>Status
             <select id="fStatus">
               <option value="">Todos</option>
-              <option value="DISPONIVEL">Disponível</option>
-              <option value="INDISPONIVEL">Indisponível</option>
+              <option value="STAND BY">Disponível</option>
+              <option value="MNT">Indisponível</option>
             </select>
           </label>
           <label>Buscar <input class="input" id="fBusca" placeholder="Prefixo, CMTE, Mecânico..."></label>
@@ -190,11 +190,11 @@
         <div class="row">
           <label>Base
             <select id="progBase" style="min-width:180px">
-              <option value="">Todas</option>
-            </select>
-          </label>
-        </div>
-      </div>
+        <option value="">Todas</option>
+      </select>
+    </label>
+  </div>
+</div>
 
 <!-- FAIXA: DISPONÍVEL (DISPONÍVEL) -->
 <div class="hgroup">
@@ -213,6 +213,7 @@
   </div>
   <div class="hlist" id="indList"></div>
 </div>
+
 
         <!-- Pizza -->
         <div class="section">
@@ -312,12 +313,13 @@
     </div>
   </div>
 
-  <!-- Modal placeholder (inserido dinamicamente) -->
+  <!-- Modal container (será preenchido dinamicamente) -->
   <div id="editModal" style="display:none"></div>
 
   <script>
     // ======= CONFIGURAÇÃO =======
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwGNWh1CxWxT_yA9E23V4j6ossYmOA1Tt2gn58Xp8DhY3vOGMGJjtiWuLZUn6gqiAY/exec'; // <--- substitua pela sua URL de deploy
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzbQsI5axZUdIvwsaUf42eznLSzevLzQjjkDzCG34ZiKJHoANhnHaeAXXpG8GwUQ0eU/exec';
+    // substitua acima pelo seu URL de implantação correto
     // ============================
 
     google.charts.load('current', {'packages':['corechart']});
@@ -426,55 +428,54 @@
       return `<span class="chip">${status||'-'}</span>`;
     }
 
-    // === Substitui a função renderListaGrouped antiga por esta (inclui data-prefixo e interatividade) ===
+    // === Substitui a função renderListaGrouped antiga por esta (inclui data-prefixo) ===
    function renderListaGrouped(rows){
-      const baseSel = $('#progBase').value || '';
-      const norm = s => String(s||'').toLowerCase();
+  const baseSel = $('#progBase').value || '';
+  const norm = s => String(s||'').toLowerCase();
 
-      const DISP = []; // Disponível
-      const IND  = []; // Indisponível (MNT)
+  const DISP = []; // Disponível
+  const IND  = []; // Indisponível (MNT)
 
-      for (const r of rows){
-        if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
-        const st = String(r.Status||'').toUpperCase();
+  for (const r of rows){
+    if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
+    const st = String(r.Status||'').toUpperCase();
 
-        const horas = getHoras(r.Prefixo);
-        const horasChip = horas > 0
-          ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
-          : '';
+    const horas = getHoras(r.Prefixo);
+    const horasChip = horas > 0
+      ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
+      : '';
 
-        // prefixo com attribute data-prefixo and clickable class
-        const cardHtml = `
-          <div class="card" data-prefixo-card="${r.Prefixo||''}">
-            <div class="title">
-              <div class="prefixo" data-prefixo="${r.Prefixo||''}" title="Clique para alterar o status">${r.Prefixo||'-'}</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                ${horasChip}
-                ${chip(r.Status)}
-              </div>
-            </div>
-            <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
-            <div class="meta">
-              <div><b>Missão:</b> ${r.Missao||'-'}</div>
-              <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
-              <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
-              ${r.Motivo_Manutencao ? `<div><b>Motivo:</b> ${r.Motivo_Manutencao}</div>` : ``}
-              ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
-            </div>
-            ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
-          </div>`;
+    // prefixo com atributo data-prefixo e classe clicável
+    const card = `
+      <div class="card">
+        <div class="title">
+          <div class="prefixo" data-prefixo="${r.Prefixo||''}" title="Clique para alterar o status">${r.Prefixo||'-'}</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${horasChip}
+            ${chip(r.Status)}
+          </div>
+        </div>
+        <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
+        <div class="meta">
+          <div><b>Missão:</b> ${r.Missao||'-'}</div>
+          <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
+          <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
+          ${r.Motivo_Manutencao ? `<div><b>Motivo:</b> ${r.Motivo_Manutencao}</div>` : ``}
+          ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
+        </div>
+        ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
+      </div>`;
 
-        if (st==='MNT') IND.push(cardHtml);
-        else           DISP.push(cardHtml);
-      }
+    if (st==='MNT' || st==='INDISPONIVEL') IND.push(card);
+    else           DISP.push(card);
+  }
 
-      $('#dispList').innerHTML = DISP.length ? DISP.join('') : `<div class="muted">—</div>`;
-      $('#indList').innerHTML  = IND.length  ? IND.join('')  : `<div class="muted">—</div>`;
+  $('#dispList').innerHTML = DISP.length ? DISP.join('') : `<div class="muted">—</div>`;
+  $('#indList').innerHTML  = IND.length  ? IND.join('')  : `<div class="muted">—</div>`;
 
-      $('#cntDISP').textContent = `(${DISP.length})`;
-      $('#cntIND').textContent  = `(${IND.length})`;
-    }
-
+  $('#cntDISP').textContent = `(${DISP.length})`;
+  $('#cntIND').textContent  = `(${IND.length})`;
+}
     /* Charts */
     function drawColumns(rows, isMonthly){
       const dt = new google.visualization.DataTable();
@@ -573,268 +574,212 @@
 
       renderListaGrouped(data.list);
       // Total vindo do backend (deduplicado/filtrado). Fallback = soma do mapa.
-      let totalHoras = 0;
-      try{
-        const h = await apiFetch({ fn:'horas', date });
-        if (h && h.ok && h.data){
-          // preencher HORAS_MAP (para chips nos cards)
-          HORAS_MAP = {};
-          if (Array.isArray(h.data.rows)){
-            h.data.rows.forEach(r => {
-              HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0);
-            });
-          }
-          totalHoras = Number(h.data.total || 0);
-          if (!totalHoras){
-            totalHoras = Object.values(HORAS_MAP).reduce((acc,v)=>acc+(Number(v)||0),0);
-          }
-        }
-      }catch(e){ /* mantém 0 em caso de erro */ }
-
-      $('#kDisp').textContent  = data.kpis.disponiveis ?? '0';
-      $('#kInd').textContent   = data.kpis.manutencao ?? '0';
-      $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
-        minimumFractionDigits:1, maximumFractionDigits:1
+let totalHoras = 0;
+try{
+  const h = await apiFetch({ fn:'horas', date });
+  if (h && h.ok && h.data){
+    // preencher HORAS_MAP (para chips nos cards)
+    HORAS_MAP = {};
+    if (Array.isArray(h.data.rows)){
+      h.data.rows.forEach(r => {
+        HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0);
       });
+    }
+    totalHoras = Number(h.data.total || 0);
+    if (!totalHoras){
+      totalHoras = Object.values(HORAS_MAP).reduce((acc,v)=>acc+(Number(v)||0),0);
+    }
+  }
+}catch(e){ /* mantém 0 em caso de erro */ }
+
+$('#kDisp').textContent  = data.kpis.disponiveis ?? '0';
+$('#kInd').textContent   = data.kpis.manutencao ?? '0';
+$('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
+  minimumFractionDigits:1, maximumFractionDigits:1
+});
 
       google.charts.setOnLoadCallback(()=> {
-        try{ drawPie(data.pie, date); }catch(e){ console.warn(e); }
-        try{ drawColumns(data.series, range==='12m'); }catch(e){ console.warn(e); }
-        try{ drawPareto(data.pareto); }catch(e){ console.warn(e); }
+        drawPie(data.pie, date);
+        drawColumns(data.series, range==='12m');
+        drawPareto(data.pareto);
       });
     }
     const refreshPareto = debounce(refreshAll, 150);
 
     /* ===== Funções para alterar status via API (setstatus) ===== */
     async function setStatusPrefixo(prefixo, status, extras={}){
-      const params = {
-        fn: 'setstatus',
-        prefixo,
-        status,
-        missao: extras.missao||'',
-        comandante: extras.comandante||'',
-        mecanico: extras.mecanico||'',
-        obs: extras.obs||'',
-        motivoCategoria: extras.motivoCategoria||''
-      };
-      const r = await apiFetch(params);
-      if (!r || !r.ok) throw new Error((r && r.error) || 'Falha ao salvar');
-      // clear related caches to force fresh data next read
-      // (não temos acesso direto ao CacheService do Apps Script daqui, então apenas re-fetch)
-      return r.data;
+      // extras: missao, comandante, mecanico, obs, motivo_categoria
+      const qp = { fn:'setstatus', prefixo, status,
+                   missao: extras.missao || '', comandante: extras.comandante || '',
+                   mecanico: extras.mecanico || '', obs: extras.obs || '', motivo_categoria: extras.motivo_categoria || '' };
+      const t = getToken();
+      if (t) qp.t = t;
+      const url = API_URL + '?' + new URLSearchParams(qp).toString();
+      const res = await fetch(url, { cache: 'no-store' });
+      const text = await res.text();
+      const json = JSON.parse(text);
+      if (!json || !json.ok) throw new Error((json && json.error) ? json.error : 'Falha setstatus');
+      return json.data;
     }
 
-    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC + Motivo categoria ===== */
+    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC ===== */
     function buildModalHtml(prefixo, lookups){
-      // fallback arrays seguros
-      const missoes = (lookups && lookups.missoes) ? lookups.missoes : [];
-      const cmtes   = (lookups && lookups.comandantes) ? lookups.comandantes : [];
-      const mecs    = (lookups && lookups.mecanicos) ? lookups.mecanicos : [];
+  // fallback arrays seguros
+  const missoes = (lookups && lookups.missoes) ? lookups.missoes : [];
+  const cmtes   = (lookups && lookups.comandantes) ? lookups.comandantes : [];
+  const mecs    = (lookups && lookups.mecanicos) ? lookups.mecanicos : [];
 
-      return `
-      <div class="modal-backdrop" id="modalBackdrop">
-        <div class="modal" role="dialog" aria-modal="true">
-          <h3>Editar status — ${prefixo}</h3>
-          <div class="row stack">
-            <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
-            <div style="display:flex;gap:8px;margin-top:6px">
-              <button id="optDisponivel" class="btn primary">1 — Disponível</button>
-              <button id="optIndisponivel" class="btn">2 — Indisponível</button>
-            </div>
-
-            <label>Missão
-              <select id="selMissao" class="input">
-                <option value="">— Selecione —</option>
-                ${missoes.map(m => `<option>${m}</option>`).join('')}
-                <option value="__OUTRO__">Outro (digitar)</option>
-              </select>
-              <input id="inpMissao" class="input" style="display:none;margin-top:6px" placeholder="Digite a missão">
-            </label>
-
-            <label>Comandante
-              <select id="selCmte" class="input">
-                <option value="">— Selecione —</option>
-                ${cmtes.map(m => `<option>${m}</option>`).join('')}
-                <option value="__OUTRO__">Outro (digitar)</option>
-              </select>
-              <input id="inpCmte" class="input" style="display:none;margin-top:6px" placeholder="Digite o comandante">
-            </label>
-
-            <label>Mecânico
-              <select id="selMec" class="input">
-                <option value="">— Selecione —</option>
-                ${mecs.map(m => `<option>${m}</option>`).join('')}
-                <option value="__OUTRO__">Outro (digitar)</option>
-              </select>
-              <input id="inpMec" class="input" style="display:none;margin-top:6px" placeholder="Digite o mecânico">
-            </label>
-
-            <label>Motivo (categoria)
-              <select id="selMotivoCategoria" class="input">
-                <option value="">— Categoria —</option>
-                <option value="Programada">Programada</option>
-                <option value="Discrepância">Discrepância</option>
-                <option value="Administrativa">Administrativa</option>
-              </select>
-            </label>
-
-            <label>Observações
-              <input id="inpObs" class="input" placeholder="Observações (opcional)">
-            </label>
-
-            <div class="actions">
-              <button id="btnCancel" class="btn">Cancelar</button>
-              <button id="btnSave" class="btn primary">Salvar</button>
-            </div>
+  return `
+    <div class="modal-backdrop" id="modalBackdrop">
+      <div class="modal" role="dialog" aria-modal="true">
+        <h3>Editar status — ${prefixo}</h3>
+        <div class="row">
+          <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button id="optDisponivel" class="btn primary">1 — Disponível</button>
+            <button id="optIndisponivel" class="btn">2 — Indisponível</button>
           </div>
         </div>
+
+        <div class="row" style="margin-top:10px;gap:8px;flex-direction:column">
+          <label>Missão
+            <select id="selMissao" class="select">
+              <option value="">— Selecione —</option>
+              ${missoes.map(m => `<option>${m}</option>`).join('')}
+              <option value="__OUTRO__">Outro (digitar)</option>
+            </select>
+            <input id="inpMissao" class="input" style="margin-top:6px;display:none" placeholder="Digite a missão">
+          </label>
+
+          <label>Comandante
+            <select id="selCmte" class="select">
+              <option value="">— Selecione —</option>
+              ${cmtes.map(m => `<option>${m}</option>`).join('')}
+              <option value="__OUTRO__">Outro (digitar)</option>
+            </select>
+            <input id="inpCmte" class="input" style="margin-top:6px;display:none" placeholder="Digite o comandante">
+          </label>
+
+          <label>Mecânico
+            <select id="selMec" class="select">
+              <option value="">— Selecione —</option>
+              ${mecs.map(m => `<option>${m}</option>`).join('')}
+              <option value="__OUTRO__">Outro (digitar)</option>
+            </select>
+            <input id="inpMec" class="input" style="margin-top:6px;display:none" placeholder="Digite o mecânico">
+          </label>
+
+          <label>Motivo (categoria)
+            <select id="selMotivoCat" class="select">
+              <option value="">— Categoria —</option>
+              <option value="Programada">Programada</option>
+              <option value="Discrepância">Discrepância</option>
+              <option value="Administrativa">Administrativa</option>
+            </select>
+          </label>
+
+          <label>Observações
+            <input id="inpObs" class="input" placeholder="Observações (opcional)">
+          </label>
+        </div>
+
+        <div class="actions">
+          <button id="btnCancel" class="btn">Cancelar</button>
+          <button id="btnSave" class="btn primary">Salvar</button>
+        </div>
       </div>
-      `;
-    }
+    </div>
+  `;
+}
 
     async function showEditModal(prefixo){
-      // garante lookups atualizados (tenta cache LOOKUPS, senão busca)
-      try{
-        if (!LOOKUPS || !LOOKUPS.missoes || LOOKUPS.missoes.length===0){
-          const res = await apiFetch({ fn: 'lookups' });
-          if (res && res.ok && res.data) LOOKUPS = res.data;
-        }
-      }catch(e){
-        console.warn('Não foi possível carregar lookups:', e);
-      }
-
-      // remove modal anterior
-      const existing = document.getElementById('modalBackdrop');
-      if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
-
-      const container = document.createElement('div');
-      container.innerHTML = buildModalHtml(prefixo, LOOKUPS);
-      document.body.appendChild(container.firstElementChild); // anexa only the backdrop
-
-      // elements
-      const bp = document.getElementById('modalBackdrop');
-      const selMissao = document.getElementById('selMissao');
-      const selCmte   = document.getElementById('selCmte');
-      const selMec    = document.getElementById('selMec');
-      const inpMissao = document.getElementById('inpMissao');
-      const inpCmte   = document.getElementById('inpCmte');
-      const inpMec    = document.getElementById('inpMec');
-      const inpObs    = document.getElementById('inpObs');
-      const selMotivo = document.getElementById('selMotivoCategoria');
-
-      // toggle "Outro (digitar)"
-      selMissao && selMissao.addEventListener('change', ()=> { inpMissao.style.display = selMissao.value==='__OUTRO__' ? 'block' : 'none'; });
-      selCmte   && selCmte.addEventListener('change', ()=> { inpCmte.style.display   = selCmte.value==='__OUTRO__' ? 'block' : 'none'; });
-      selMec    && selMec.addEventListener('change', ()=> { inpMec.style.display    = selMec.value==='__OUTRO__' ? 'block' : 'none'; });
-
-      // Buttons
-      document.getElementById('btnCancel').addEventListener('click', ()=> { const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b); });
-      document.getElementById('btnSave').addEventListener('click', async ()=>{
-        // decide status via button class presence
-        const sDisp = document.getElementById('optDisponivel').classList.contains('primary');
-        const sInd  = document.getElementById('optIndisponivel').classList.contains('primary');
-        let status = sDisp ? 'DISPONIVEL' : (sInd ? 'INDISPONIVEL' : 'DISPONIVEL');
-
-        const missao = (selMissao && selMissao.value === '__OUTRO__') ? (inpMissao.value.trim()||'') : (selMissao ? selMissao.value : '');
-        const comandante = (selCmte && selCmte.value === '__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte ? selCmte.value : '');
-        const mecanico = (selMec && selMec.value === '__OUTRO__') ? (inpMec.value.trim()||'') : (selMec ? selMec.value : '');
-        const obs = inpObs ? inpObs.value.trim() : '';
-        const motivoCategoria = selMotivo ? selMotivo.value : '';
-
-        // Optimistic UI update: move card immediately
-        try{
-          optimisticSet(prefixo, status, { missao, comandante, mecanico, obs, motivoCategoria });
-        }catch(e){
-          console.warn('optimistic update failed', e);
-        }
-
-        // call API to persist
-        try{
-          await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, obs, motivoCategoria });
-          // close modal
-          const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b);
-          // refresh in background to update charts & counts
-          setTimeout(()=>refreshAll(), 250);
-        }catch(err){
-          alert('Erro ao salvar: ' + (err.message||err));
-          // revert UI (fast refresh)
-          await refreshAll();
-        }
-      });
-
-      // Quick toggle behaviour
-      const btnDisp = document.getElementById('optDisponivel');
-      const btnInd  = document.getElementById('optIndisponivel');
-      const setActive = (which)=>{
-        if (which==='disp'){ btnDisp.classList.add('primary'); btnInd.classList.remove('primary'); }
-        else { btnInd.classList.add('primary'); btnDisp.classList.remove('primary'); }
-      };
-      btnDisp.addEventListener('click', ()=> setActive('disp'));
-      btnInd.addEventListener('click', ()=> setActive('ind'));
-      setActive('disp');
-
-      // fechar clicando fora
-      bp.addEventListener('click', (ev)=>{ if (ev.target === bp){ if (bp && bp.parentNode) bp.parentNode.removeChild(bp); } });
+  // garante lookups atualizados (tenta cache LOOKUPS, senão busca)
+  try{
+    if (!LOOKUPS || !LOOKUPS.missoes || LOOKUPS.missoes.length===0){
+      const res = await apiFetch({ fn: 'lookups' });
+      if (res && res.ok && res.data) LOOKUPS = res.data;
     }
+  }catch(e){
+    console.warn('Não foi possível carregar lookups:', e);
+  }
 
-    // Optimistic UI: change card immediately before API returns
-    function optimisticSet(prefixo, status, extras){
-      // find card element(s) with data-prefixo-card or inner prefixo
-      const cards = document.querySelectorAll(`[data-prefixo-card="${prefixo}"], .prefixo[data-prefixo="${prefixo}"]`);
-      // If found the card wrapper, move to appropriate container and change chip
-      // We'll find the nearest .card containing the prefixo text
-      for (const el of document.querySelectorAll('.card')){
-        const p = el.querySelector('.prefixo');
-        if (!p) continue;
-        const val = (p.getAttribute('data-prefixo')||p.textContent||'').trim();
-        if (val===prefixo){
-          // update chip HTML
-          const chipHtml = (status==='INDISPONIVEL' ? '<span class="chip mt">INDISPONÍVEL</span>' : '<span class="chip sb">DISPONÍVEL</span>');
-          // replace existing chip (last item in title)
-          const titleRight = el.querySelector('.title > div:last-child');
-          if (titleRight) {
-            // remove existing chip(s) and append new chip
-            titleRight.innerHTML = (extras && getHoras(prefixo) ? `<span class="chip hr">${getHoras(prefixo).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>` : '') + chipHtml;
-          }
-          // update mission/comandante/mec display
-          const meta = el.querySelector('.meta');
-          if (meta){
-            const lines = [];
-            lines.push(`<div><b>Missão:</b> ${extras.missao || '-'}</div>`);
-            lines.push(`<div><b>CMTE:</b> ${extras.comandante || '-'}</div>`);
-            lines.push(`<div><b>MEC:</b> ${extras.mecanico || '-'}</div>`);
-            if (extras.motivoCategoria) lines.push(`<div><b>Motivo:</b> ${extras.motivoCategoria}</div>`);
-            if (extras.previsao) lines.push(`<div><b>Previsão:</b> ${extras.previsao}</div>`);
-            meta.innerHTML = lines.join('');
-          }
-          // move card
-          if (status==='INDISPONIVEL'){
-            // append to indList
-            $('#indList').insertAdjacentElement('afterbegin', el);
-          } else {
-            $('#dispList').insertAdjacentElement('afterbegin', el);
-          }
-          break;
-        }
-      }
-      // update counters quickly
-      // quick recount
-      setTimeout(()=> {
-        const dispCount = document.querySelectorAll('#dispList .card').length;
-        const indCount = document.querySelectorAll('#indList .card').length;
-        $('#cntDISP').textContent = `(${dispCount})`;
-        $('#cntIND').textContent = `(${indCount})`;
-      }, 40);
+  // remove modal anterior
+  const existing = document.getElementById('modalBackdrop');
+  if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+  const container = document.createElement('div');
+  container.innerHTML = buildModalHtml(prefixo, LOOKUPS);
+  document.body.appendChild(container.firstElementChild); // anexa only the backdrop
+
+  // elementos
+  const bp = document.getElementById('modalBackdrop');
+  const selMissao = document.getElementById('selMissao');
+  const selCmte   = document.getElementById('selCmte');
+  const selMec    = document.getElementById('selMec');
+  const inpMissao = document.getElementById('inpMissao');
+  const inpCmte   = document.getElementById('inpCmte');
+  const inpMec    = document.getElementById('inpMec');
+  const inpObs    = document.getElementById('inpObs');
+  const selMotivo = document.getElementById('selMotivoCat');
+
+  // toggle "Outro (digitar)"
+  selMissao && selMissao.addEventListener('change', ()=> { inpMissao.style.display = selMissao.value==='__OUTRO__' ? 'block' : 'none'; });
+  selCmte   && selCmte.addEventListener('change', ()=> { inpCmte.style.display   = selCmte.value==='__OUTRO__' ? 'block' : 'none'; });
+  selMec    && selMec.addEventListener('change', ()=> { inpMec.style.display    = selMec.value==='__OUTRO__' ? 'block' : 'none'; });
+
+  // Buttons
+  document.getElementById('btnCancel').addEventListener('click', ()=> { const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b); });
+  document.getElementById('btnSave').addEventListener('click', async ()=>{
+    // desabilita botão p/ evitar duplo clique
+    const btnSave = document.getElementById('btnSave');
+    btnSave.disabled = true;
+
+    const sDisp = document.getElementById('optDisponivel').classList.contains('primary');
+    const sInd  = document.getElementById('optIndisponivel').classList.contains('primary');
+    let status = sDisp ? 'DISPONIVEL' : (sInd ? 'INDISPONIVEL' : 'DISPONIVEL');
+
+    const missao = (selMissao && selMissao.value === '__OUTRO__') ? (inpMissao.value.trim()||'') : (selMissao ? selMissao.value : '');
+    const comandante = (selCmte && selCmte.value === '__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte ? selCmte.value : '');
+    const mecanico = (selMec && selMec.value === '__OUTRO__') ? (inpMec.value.trim()||'') : (selMec ? selMec.value : '');
+    const obs = inpObs ? inpObs.value.trim() : '';
+    const motivo_categoria = selMotivo ? selMotivo.value || '' : '';
+
+    try{
+      // chama API para setstatus
+      await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, obs, motivo_categoria });
+      const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b);
+      // atualiza UI: refreshAll para garantir consistência; você pode otimizar para atualizar só 1 card
+      await refreshAll();
+    }catch(err){
+      alert('Erro ao salvar: ' + (err.message||err));
+    }finally{
+      btnSave.disabled = false;
     }
+  });
 
-    // Delegação de clique: garante que prefixos dinâmicos abram modal
-    document.addEventListener('click', (ev) => {
-      const el = ev.target.closest('.prefixo[data-prefixo]');
-      if (!el) return;
-      const prefixo = el.getAttribute('data-prefixo') || el.textContent.trim();
-      if (!prefixo) return;
-      showEditModal(prefixo);
-    });
+  // Quick toggle behaviour
+  const btnDisp = document.getElementById('optDisponivel');
+  const btnInd  = document.getElementById('optIndisponivel');
+  const setActive = (which)=>{
+    if (which==='disp'){ btnDisp.classList.add('primary'); btnInd.classList.remove('primary'); }
+    else { btnInd.classList.add('primary'); btnDisp.classList.remove('primary'); }
+  };
+  btnDisp.addEventListener('click', ()=> setActive('disp'));
+  btnInd.addEventListener('click', ()=> setActive('ind'));
+  setActive('disp');
+
+  // fechar clicando fora
+  bp.addEventListener('click', (ev)=>{ if (ev.target === bp){ if (bp && bp.parentNode) bp.parentNode.removeChild(bp); } });
+}
+
+// === Delegação de clique: garante que prefixos dinâmicos abram modal ===
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest('.prefixo[data-prefixo]');
+  if (!el) return;
+  const prefixo = el.getAttribute('data-prefixo') || el.textContent.trim();
+  if (!prefixo) return;
+  showEditModal(prefixo);
+});
 
     /* Eventos */
     $('#btnFiltrar').addEventListener('click', refreshAll);
@@ -867,48 +812,54 @@
       }
     })();
 
-  /* ====== Baixar PDF ====== */
-  async function downloadPDF(){
-    try{
-      const node = document.getElementById('exportRoot') || document.getElementById('exportArea');
-      if (!node) { alert('Não encontrei a área a exportar (exportRoot/exportArea).'); return; }
+/* ====== Baixar PDF ====== */
+async function downloadPDF(){
+  try{
+    // usa exportRoot; se não existir, cai para exportArea
+    const node = document.getElementById('exportRoot') || document.getElementById('exportArea');
+    if (!node) { alert('Não encontrei a área a exportar (exportRoot/exportArea).'); return; }
 
-      if (!window.html2canvas) { alert('html2canvas não carregado.'); return; }
-      if (!window.jspdf || !window.jspdf.jsPDF) { alert('jsPDF não carregado.'); return; }
+    if (!window.html2canvas) { alert('html2canvas não carregado.'); return; }
+    if (!window.jspdf || !window.jspdf.jsPDF) { alert('jsPDF não carregado.'); return; }
 
-      await new Promise(r=>requestAnimationFrame(r));
-      const scale = Math.max(2, (window.devicePixelRatio || 1)) * 1.25;
-      const canvas = await html2canvas(node, {
-        backgroundColor: getComputedStyle(document.body).backgroundColor || '#0b1320',
-        scale,
-        useCORS: true,
-        windowWidth: Math.max(document.documentElement.clientWidth, node.scrollWidth)
-      });
+    // espera layout estabilizar (gráficos etc.)
+    await new Promise(r=>requestAnimationFrame(r));
 
-      const imgData = canvas.toDataURL('image/png');
-      const w = canvas.width, h = canvas.height;
-      const margin = 36;
-      const pdfW = w + margin * 2;
-      const pdfH = h + margin * 2;
+    // render em alta resolução
+    const scale = Math.max(2, (window.devicePixelRatio || 1)) * 1.25;
+    const canvas = await html2canvas(node, {
+      backgroundColor: getComputedStyle(document.body).backgroundColor || '#0b1320',
+      scale,
+      useCORS: true,
+      windowWidth: Math.max(document.documentElement.clientWidth, node.scrollWidth)
+    });
 
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({
-        orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
-        unit: 'pt',
-        format: [pdfW, pdfH]
-      });
+    const imgData = canvas.toDataURL('image/png');
+    const w = canvas.width, h = canvas.height;
 
-      pdf.addImage(imgData, 'PNG', margin, margin, w, h, undefined, 'FAST');
-      pdf.save(`Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`);
-    }catch(err){
-      console.error('Erro ao gerar PDF:', err);
-      alert('Não foi possível gerar o PDF. Veja o console (F12) para detalhes.');
-    }
+    // margem bonita ~0.5"
+    const margin = 36;
+    const pdfW = w + margin * 2;
+    const pdfH = h + margin * 2;
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
+      unit: 'pt',
+      format: [pdfW, pdfH]
+    });
+
+    pdf.addImage(imgData, 'PNG', margin, margin, w, h, undefined, 'FAST');
+    pdf.save(`Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`);
+  }catch(err){
+    console.error('Erro ao gerar PDF:', err);
+    alert('Não foi possível gerar o PDF. Veja o console (F12) para detalhes.');
   }
+}
 
-  // liga o botão (uma vez só)
-  const btnDl = document.getElementById('btnDownload');
-  if (btnDl) btnDl.onclick = downloadPDF;
+// liga o botão (uma vez só)
+const btnDl = document.getElementById('btnDownload');
+if (btnDl) btnDl.onclick = downloadPDF;
   </script>
 
 </body>
