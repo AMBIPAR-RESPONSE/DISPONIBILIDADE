@@ -429,57 +429,53 @@
     }
 
     // === Substitui a função renderListaGrouped antiga por esta (inclui data-prefixo) ===
-    function renderListaGrouped(rows){
-      const baseSel = $('#progBase').value || '';
-      const norm = s => String(s||'').toLowerCase();
+   function renderListaGrouped(rows){
+  const baseSel = $('#progBase').value || '';
+  const norm = s => String(s||'').toLowerCase();
 
-      // agora só 2 grupos
-      const DISP = []; // Disponível
-      const IND  = []; // Indisponível (MNT)
+  const DISP = []; // Disponível
+  const IND  = []; // Indisponível (MNT)
 
-      for (const r of rows){
-        if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
-        const st = String(r.Status||'').toUpperCase();
+  for (const r of rows){
+    if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
+    const st = String(r.Status||'').toUpperCase();
 
-        const horas = getHoras(r.Prefixo);
-        const horasChip = horas > 0
-          ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
-          : '';
+    const horas = getHoras(r.Prefixo);
+    const horasChip = horas > 0
+      ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
+      : '';
 
-        // aqui o prefixo ficou com data-prefixo para permitir clique
-        const card = `
-          <div class="card">
-            <div class="title">
-              <div class="prefixo" data-prefixo="${r.Prefixo||''}" title="Clique para alterar o status">${r.Prefixo||'-'}</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                ${horasChip}
-                ${chip(r.Status)}
-              </div>
-            </div>
-            <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
-            <div class="meta">
-              <div><b>Missão:</b> ${r.Missao||'-'}</div>
-              <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
-              <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
-              ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
-              ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
-            </div>
-            ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
-          </div>`;
+    // prefixo com atributo data-prefixo e classe clicável
+    const card = `
+      <div class="card">
+        <div class="title">
+          <div class="prefixo" data-prefixo="${r.Prefixo||''}" title="Clique para alterar o status">${r.Prefixo||'-'}</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${horasChip}
+            ${chip(r.Status)}
+          </div>
+        </div>
+        <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
+        <div class="meta">
+          <div><b>Missão:</b> ${r.Missao||'-'}</div>
+          <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
+          <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
+          ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
+          ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
+        </div>
+        ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
+      </div>`;
 
-        if (st==='MNT') IND.push(card);
-        else           DISP.push(card);  // STAND BY e MISSÃO eram "disponíveis" - mantemos como DISPONÍVEL
-      }
+    if (st==='MNT') IND.push(card);
+    else           DISP.push(card);
+  }
 
-      // escreve nas novas listas
-      $('#dispList').innerHTML = DISP.length ? DISP.join('') : `<div class="muted">—</div>`;
-      $('#indList').innerHTML  = IND.length  ? IND.join('')  : `<div class="muted">—</div>`;
+  $('#dispList').innerHTML = DISP.length ? DISP.join('') : `<div class="muted">—</div>`;
+  $('#indList').innerHTML  = IND.length  ? IND.join('')  : `<div class="muted">—</div>`;
 
-      // contadores
-      $('#cntDISP').textContent = `(${DISP.length})`;
-      $('#cntIND').textContent  = `(${IND.length})`;
-    }
-
+  $('#cntDISP').textContent = `(${DISP.length})`;
+  $('#cntIND').textContent  = `(${IND.length})`;
+}
     /* Charts */
     function drawColumns(rows, isMonthly){
       const dt = new google.visualization.DataTable();
@@ -624,131 +620,148 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
     }
 
     /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC ===== */
-    function buildModalHtml(prefixo){
-      return `
-        <div class="modal-backdrop" id="modalBackdrop">
-          <div class="modal" role="dialog" aria-modal="true">
-            <h3>Editar status — ${prefixo}</h3>
-            <div class="row">
-              <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
-              <div style="display:flex;gap:8px;margin-top:6px">
-                <button id="optDisponivel" class="btn primary">1 — Disponível</button>
-                <button id="optIndisponivel" class="btn">2 — Indisponível</button>
-              </div>
-            </div>
+    function buildModalHtml(prefixo, lookups){
+  // fallback arrays seguros
+  const missoes = (lookups && lookups.missoes) ? lookups.missoes : [];
+  const cmtes   = (lookups && lookups.comandantes) ? lookups.comandantes : [];
+  const mecs    = (lookups && lookups.mecanicos) ? lookups.mecanicos : [];
 
-            <div class="row" style="margin-top:10px">
-              <label>Missão
-                <select id="selMissao" class="input">
-                  <option value="">— Selecione —</option>
-                  ${LOOKUPS.missoes.map(m => `<option>${m}</option>`).join('')}
-                  <option value="__OUTRO__">Outro (digitar)</option>
-                </select>
-                <input id="inpMissao" class="input" style="margin-top:6px;display:none" placeholder="Digite a missão">
-              </label>
-
-              <label>Comandante
-                <select id="selCmte" class="input">
-                  <option value="">— Selecione —</option>
-                  ${LOOKUPS.comandantes.map(m => `<option>${m}</option>`).join('')}
-                  <option value="__OUTRO__">Outro (digitar)</option>
-                </select>
-                <input id="inpCmte" class="input" style="margin-top:6px;display:none" placeholder="Digite o comandante">
-              </label>
-
-              <label>Mecânico
-                <select id="selMec" class="input">
-                  <option value="">— Selecione —</option>
-                  ${LOOKUPS.mecanicos.map(m => `<option>${m}</option>`).join('')}
-                  <option value="__OUTRO__">Outro (digitar)</option>
-                </select>
-                <input id="inpMec" class="input" style="margin-top:6px;display:none" placeholder="Digite o mecânico">
-              </label>
-            </div>
-
-            <div class="row" style="margin-top:8px">
-              <label>Observações
-                <input id="inpObs" class="input" placeholder="Observações (opcional)">
-              </label>
-            </div>
-
-            <div class="actions">
-              <button id="btnCancel" class="btn">Cancelar</button>
-              <button id="btnSave" class="btn primary">Salvar</button>
-            </div>
+  return `
+    <div class="modal-backdrop" id="modalBackdrop">
+      <div class="modal" role="dialog" aria-modal="true">
+        <h3>Editar status — ${prefixo}</h3>
+        <div class="row">
+          <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button id="optDisponivel" class="btn primary">1 — Disponível</button>
+            <button id="optIndisponivel" class="btn">2 — Indisponível</button>
           </div>
         </div>
-      `;
+
+        <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
+          <label style="flex:1 1 45%">Missão
+            <select id="selMissao" class="input">
+              <option value="">— Selecione —</option>
+              ${missoes.map(m => `<option>${m}</option>`).join('')}
+              <option value="__OUTRO__">Outro (digitar)</option>
+            </select>
+            <input id="inpMissao" class="input" style="margin-top:6px;display:none" placeholder="Digite a missão">
+          </label>
+
+          <label style="flex:1 1 25%">Comandante
+            <select id="selCmte" class="input">
+              <option value="">— Selecione —</option>
+              ${cmtes.map(m => `<option>${m}</option>`).join('')}
+              <option value="__OUTRO__">Outro (digitar)</option>
+            </select>
+            <input id="inpCmte" class="input" style="margin-top:6px;display:none" placeholder="Digite o comandante">
+          </label>
+
+          <label style="flex:1 1 25%">Mecânico
+            <select id="selMec" class="input">
+              <option value="">— Selecione —</option>
+              ${mecs.map(m => `<option>${m}</option>`).join('')}
+              <option value="__OUTRO__">Outro (digitar)</option>
+            </select>
+            <input id="inpMec" class="input" style="margin-top:6px;display:none" placeholder="Digite o mecânico">
+          </label>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <label style="width:100%">Observações
+            <input id="inpObs" class="input" placeholder="Observações (opcional)">
+          </label>
+        </div>
+
+        <div class="actions">
+          <button id="btnCancel" class="btn">Cancelar</button>
+          <button id="btnSave" class="btn primary">Salvar</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+    async function showEditModal(prefixo){
+  // garante lookups atualizados (tenta cache LOOKUPS, senão busca)
+  try{
+    if (!LOOKUPS || !LOOKUPS.missoes || LOOKUPS.missoes.length===0){
+      const res = await apiFetch({ fn: 'lookups' });
+      if (res && res.ok && res.data) LOOKUPS = res.data;
     }
+  }catch(e){
+    // se falhar, segue com arrays vazios — modal ainda abre
+    console.warn('Não foi possível carregar lookups:', e);
+  }
 
-    function showEditModal(prefixo){
-      const wrapper = document.getElementById('editModal');
-      wrapper.innerHTML = buildModalHtml(prefixo);
-      wrapper.style.display = 'block';
+  // cria modal e anexa ao body (remove modal anterior se existir)
+  const existing = document.getElementById('modalBackdrop');
+  if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
 
-      // elementos
-      const bp = document.getElementById('modalBackdrop');
-      const selMissao = document.getElementById('selMissao');
-      const selCmte   = document.getElementById('selCmte');
-      const selMec    = document.getElementById('selMec');
-      const inpMissao = document.getElementById('inpMissao');
-      const inpCmte   = document.getElementById('inpCmte');
-      const inpMec    = document.getElementById('inpMec');
-      const inpObs    = document.getElementById('inpObs');
+  const container = document.createElement('div');
+  container.innerHTML = buildModalHtml(prefixo, LOOKUPS);
+  document.body.appendChild(container.firstElementChild); // anexa only the backdrop
 
-      // toggle "Outro (digitar)"
-      selMissao.addEventListener('change', ()=> { if (selMissao.value==='__OUTRO__') inpMissao.style.display='block'; else inpMissao.style.display='none'; });
-      selCmte.addEventListener('change', ()=> { if (selCmte.value==='__OUTRO__') inpCmte.style.display='block'; else inpCmte.style.display='none'; });
-      selMec.addEventListener('change', ()=> { if (selMec.value==='__OUTRO__') inpMec.style.display='block'; else inpMec.style.display='none'; });
+  // elementos
+  const bp = document.getElementById('modalBackdrop');
+  const selMissao = document.getElementById('selMissao');
+  const selCmte   = document.getElementById('selCmte');
+  const selMec    = document.getElementById('selMec');
+  const inpMissao = document.getElementById('inpMissao');
+  const inpCmte   = document.getElementById('inpCmte');
+  const inpMec    = document.getElementById('inpMec');
+  const inpObs    = document.getElementById('inpObs');
 
-      // Buttons
-      document.getElementById('btnCancel').addEventListener('click', ()=> { wrapper.innerHTML=''; wrapper.style.display='none'; });
-      document.getElementById('btnSave').addEventListener('click', async ()=>{
-        // Determine selected status: prefer last clicked (optDisponivel/optIndisponivel)
-        const sDisp = document.getElementById('optDisponivel').classList.contains('primary');
-        const sInd  = document.getElementById('optIndisponivel').classList.contains('primary');
-        let status = sDisp ? 'DISPONIVEL' : (sInd ? 'INDISPONIVEL' : 'DISPONIVEL');
+  // toggle "Outro (digitar)"
+  selMissao && selMissao.addEventListener('change', ()=> { inpMissao.style.display = selMissao.value==='__OUTRO__' ? 'block' : 'none'; });
+  selCmte   && selCmte.addEventListener('change', ()=> { inpCmte.style.display   = selCmte.value==='__OUTRO__' ? 'block' : 'none'; });
+  selMec    && selMec.addEventListener('change', ()=> { inpMec.style.display    = selMec.value==='__OUTRO__' ? 'block' : 'none'; });
 
-        // gather fields (if select==__OUTRO__ use input value)
-        const missao = (selMissao.value === '__OUTRO__') ? (inpMissao.value.trim()||'') : (selMissao.value||'');
-        const comandante = (selCmte.value === '__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte.value||'');
-        const mecanico = (selMec.value === '__OUTRO__') ? (inpMec.value.trim()||'') : (selMec.value||'');
-        const obs = inpObs.value.trim() || '';
+  // Buttons
+  document.getElementById('btnCancel').addEventListener('click', ()=> { const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b); });
+  document.getElementById('btnSave').addEventListener('click', async ()=>{
+    const sDisp = document.getElementById('optDisponivel').classList.contains('primary');
+    const sInd  = document.getElementById('optIndisponivel').classList.contains('primary');
+    let status = sDisp ? 'DISPONIVEL' : (sInd ? 'INDISPONIVEL' : 'DISPONIVEL');
 
-        try{
-          await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, obs });
-          wrapper.innerHTML=''; wrapper.style.display='none';
-          await refreshAll();
-        }catch(err){
-          alert('Erro ao salvar: ' + (err.message||err));
-        }
-      });
+    const missao = (selMissao && selMissao.value === '__OUTRO__') ? (inpMissao.value.trim()||'') : (selMissao ? selMissao.value : '');
+    const comandante = (selCmte && selCmte.value === '__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte ? selCmte.value : '');
+    const mecanico = (selMec && selMec.value === '__OUTRO__') ? (inpMec.value.trim()||'') : (selMec ? selMec.value : '');
+    const obs = inpObs ? inpObs.value.trim() : '';
 
-      // Quick toggle behaviour: make clicked button primary and the other default
-      const btnDisp = document.getElementById('optDisponivel');
-      const btnInd  = document.getElementById('optIndisponivel');
-      const setActive = (which)=>{
-        if (which==='disp'){ btnDisp.classList.add('primary'); btnInd.classList.remove('primary'); }
-        else { btnInd.classList.add('primary'); btnDisp.classList.remove('primary'); }
-      };
-      btnDisp.addEventListener('click', ()=> setActive('disp'));
-      btnInd.addEventListener('click', ()=> setActive('ind'));
-      // default: Disponível
-      setActive('disp');
-
-      // clicking outside modal closes
-      bp.addEventListener('click', (ev)=>{ if (ev.target === bp){ wrapper.innerHTML=''; wrapper.style.display='none'; } });
-
+    try{
+      await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, obs });
+      const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b);
+      await refreshAll();
+    }catch(err){
+      alert('Erro ao salvar: ' + (err.message||err));
     }
+  });
 
-    /* Evento: clique no PREFIXO abre o modal */
-    document.addEventListener('click', (ev) => {
-      const el = ev.target.closest('[data-prefixo]');
-      if (!el) return;
-      const prefixo = el.getAttribute('data-prefixo');
-      if (!prefixo) return;
-      showEditModal(prefixo);
-    });
+  // Quick toggle behaviour
+  const btnDisp = document.getElementById('optDisponivel');
+  const btnInd  = document.getElementById('optIndisponivel');
+  const setActive = (which)=>{
+    if (which==='disp'){ btnDisp.classList.add('primary'); btnInd.classList.remove('primary'); }
+    else { btnInd.classList.add('primary'); btnDisp.classList.remove('primary'); }
+  };
+  btnDisp.addEventListener('click', ()=> setActive('disp'));
+  btnInd.addEventListener('click', ()=> setActive('ind'));
+  setActive('disp');
+
+  // fechar clicando fora
+  bp.addEventListener('click', (ev)=>{ if (ev.target === bp){ if (bp && bp.parentNode) bp.parentNode.removeChild(bp); } });
+}
+
+// === Delegação de clique: garante que prefixos dinâmicos abram modal ===
+document.addEventListener('click', (ev) => {
+  // busca o elemento .prefixo com data-prefixo mais próximo do alvo do clique
+  const el = ev.target.closest('.prefixo[data-prefixo]');
+  if (!el) return;
+  const prefixo = el.getAttribute('data-prefixo') || el.textContent.trim();
+  if (!prefixo) return;
+  showEditModal(prefixo);
+});
 
     /* Eventos */
     $('#btnFiltrar').addEventListener('click', refreshAll);
