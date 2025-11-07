@@ -9,142 +9,414 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet" />
 
-  <!-- Google Charts (se usa) -->
+  <!-- Google Charts -->
   <script src="https://www.gstatic.com/charts/loader.js"></script>
+
+  <!-- Export helpers -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
     :root{
-      --bg:#0b1320; --card:#0f1724; --muted:#94a3b8; --text:#e5e7eb; --border:#1f2937;
-      --brand:#22c55e; --danger:#ef4444; --chip:#0f172a;
+      --bg:#0b1320; --card:#0f1720; --muted:#94a3b8; --text:#e5e7eb; --border:#1f2937;
+      --brand:#22c55e; --brand-2:#3b82f6; --danger:#ef4444; --chip:#0f172a; --line:#1f2937;
     }
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    a{color:inherit;text-decoration:none}
     .wrap{max-width:1200px;margin:0 auto;padding:20px}
 
-    .topbar{position:sticky;top:0;background:rgba(11,19,32,.95);border-bottom:1px solid var(--border);z-index:20}
-    .topbar .row{display:flex;align-items:center;gap:16px;padding:12px 20px}
+    .topbar{position:sticky;top:0;z-index:10;background:rgba(11,19,32,.9);backdrop-filter: blur(8px);border-bottom:1px solid var(--border);}
+    .topbar .row{display:flex;align-items:center;gap:16px;min-height:64px}
     .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+    .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 4px rgba(34,197,94,.25)}
     .spacer{flex:1}
-    .btn{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:#fff;display:flex;align-items:center;gap:8px;cursor:pointer}
+    .btn{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:#fff;display:flex;align-items:center;gap:8px;cursor:pointer}
     .btn.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04)}
 
-    .filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-top:14px}
-    .input, select, button{height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--border);background:#0b1220;color:#e5e7eb}
+    .filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-top:14px}
+    .input, select, button{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#071120;color:#e5e7eb}
+    .input::placeholder{color:#64748b}
+    .row{display:flex;gap:12px;align-items:center}
     label{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:12px}
 
-    .kpis{display:flex;gap:14px;margin-top:16px}
-    .kpi{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px}
-    .kpi .val{font-size:20px;font-weight:800}
+    .kpis{display:grid;gap:14px;margin-top:16px}
+    @media(min-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}}
+    .kpi{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+    .kpi .icon{width:44px;height:44px;border-radius:12px;display:grid;place-items:center}
+    .kpi h3{margin:0;font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+    .kpi .val{font-size:28px;font-weight:800;margin-top:4px}
+    .i-green{background:rgba(34,197,94,.12);color:#34d399}
+    .i-blue {background:rgba(59,130,246,.10);color:#60a5fa}
+    .i-red  {background:rgba(239,68,68,.10);color:#f87171}
 
-    .hgroup{margin-top:18px}
-    .hlabel{font-weight:800;color:#cbd5e1;margin-bottom:8px}
-    .hlist{display:flex;flex-wrap:wrap;gap:12px}
+    .section{display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px}
+    .section h2{margin:0;font-size:18px}
 
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;min-width:240px;max-width:320px;flex:1 1 240px}
+    .hgroup{display:flex;flex-direction:column;gap:10px;margin:14px 0 24px}
+    .hline{display:flex;align-items:center;gap:12px}
+    .hlabel{font-weight:800;letter-spacing:.3px;font-size:16px;color:#cbd5e1;white-space:nowrap}
+    .hdivider{height:4px;background:var(--line);border-radius:3px;flex:1}
+
+    .hlist{display:flex;flex-wrap:wrap;gap:14px;align-items:stretch}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;min-width:260px;max-width:360px;flex:1 1 260px;box-shadow:0 3px 10px rgba(0,0,0,.25)}
     .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-    .prefixo{font-weight:800;font-size:16px;cursor:pointer}
-    .chip{padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;background:var(--chip);border:1px solid var(--border)}
-    .chip.sb{color:#34d399}.chip.ms{color:#60a5fa}.chip.mt{color:#f87171}
+    .prefixo{font-weight:800;font-size:16px}
+    .chip{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--chip);border:1px solid var(--border)}
+    .chip.sb{color:#34d399;border-color:rgba(34,197,94,.18);background:rgba(34,197,94,.06)}
+    .chip.ms{color:#60a5fa;border-color:rgba(59,130,246,.18);background:rgba(59,130,246,.04)}
+    .chip.mt{color:#f87171;border-color:rgba(239,68,68,.18);background:rgba(239,68,68,.04)}
+    .chip.hr{background:rgba(34,197,94,.12); color:#34d399}
     .muted{color:var(--muted);font-size:12px}
     .meta{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:13px;margin-top:8px}
 
-    /* Modal */
+    #chart_div{height:360px}
+    #pie_div{height:260px}
+    #pareto_div{height:360px}
+    .foot{margin:28px 0;color:#64748b;font-size:12px;text-align:center}
+
+    /* MultiSelect */
+    .ms{position:relative;min-width:220px}
+    .ms-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:220px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#071120;color:#e5e7eb;cursor:pointer}
+    .ms-panel{position:absolute;top:44px;left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;min-width:280px;max-height:280px;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.35);display:none;z-index:50}
+    .ms.open .ms-panel{display:block}
+    .ms-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
+    .ms-row:last-child{border-bottom:0}
+    .ms-row input{width:16px;height:16px}
+    .ms-title{font-size:12px;color:#9aa4b2;padding:8px 12px 0}
+    .ms-footer{display:flex;gap:8px;justify-content:flex-end;padding:10px}
+    .ms-footer button{height:34px;padding:0 12px}
+
+    #exportArea{
+      background:var(--bg);
+      padding:32px 36px 36px;   /* respiro interno pro PDF e pra tela */
+      border-radius:16px;       /* opcional: dá um acabamento melhor no recorte */
+    }
+
+    /* Indica que o prefixo é clicável */
+    .prefixo[data-prefixo]{ cursor:pointer; text-decoration:none; }
+    .prefixo[data-prefixo]:hover{ text-decoration:underline; }
+
+    /* Modal simples */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:2000; }
     .modal{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; width:520px; max-width:95%; color:var(--text); }
     .modal h3{ margin:0 0 8px 0; font-size:16px }
-    .modal .row{ margin:8px 0; }
-    .modal label{ display:block; margin-bottom:8px; }
-    .modal .input, .modal select{ width:100%; box-sizing:border-box; margin-top:6px; }
+    .modal .row{ margin:8px 0; flex-direction:column; align-items:flex-start; gap:8px }
+    .modal label{ width:100%; display:block; font-size:13px; color:#cbd5e1; margin-bottom:6px}
     .modal .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px }
-
     .small{ font-size:13px; color:var(--muted) }
+
+    /* stacked inputs in modal */
+    .modal .stack { display:flex; flex-direction:column; gap:10px; }
+    .modal select.input, .modal input.input { width:100%; box-sizing:border-box; }
   </style>
 </head>
 <body>
   <div class="topbar">
-    <div class="row">
-      <div class="brand"><span style="width:10px;height:10px;border-radius:50%;background:var(--brand);display:inline-block;"></span> Disponibilidade da Frota</div>
+    <div class="wrap row">
+      <div class="brand"><span class="dot"></span> Disponibilidade da Frota</div>
       <div class="spacer"></div>
-      <div>
-        <button id="btnRefresh" class="btn" title="Atualizar">Atualizar</button>
+      <div class="topRight">
+        <span id="userEmail" class="muted" style="display:none"></span>
+        <button id="btnLogout" class="btn" style="display:none"><span class="material-symbols-rounded">logout</span> Sair</button>
+        <button id="btnDownload" class="btn"><span class="material-symbols-rounded">download</span> Baixar</button>
+        <a class="muted" href="#" id="btnRefresh" title="Atualizar"><span class="material-symbols-rounded">refresh</span></a>
       </div>
     </div>
   </div>
 
-  <div class="wrap">
-    <div class="filters">
-      <label>Data
-        <input id="fData" class="input" type="date">
-      </label>
-      <label>Status
-        <select id="fStatus" class="input">
-          <option value="">Todos</option>
-          <option value="STAND BY">Disponível</option>
-          <option value="MNT">Indisponível</option>
-        </select>
-      </label>
-      <label>Buscar
-        <input id="fBusca" class="input" placeholder="Prefixo, CMTE, Mecânico...">
-      </label>
-      <div style="display:flex;align-items:center">
-        <button id="btnFiltrar" class="btn primary">Aplicar</button>
-      </div>
-    </div>
-
-    <div class="kpis">
-      <div class="kpi"><div><h4 style="margin:0">Disponíveis</h4><div id="kDisp" class="val">—</div></div></div>
-      <div class="kpi"><div><h4 style="margin:0">Indisponíveis</h4><div id="kInd" class="val">—</div></div></div>
-      <div class="kpi"><div><h4 style="margin:0">Horas no mês</h4><div id="kHoras" class="val">—</div></div></div>
-    </div>
-
-    <div class="hgroup">
-      <div class="hlabel">DISPONÍVEL <span id="cntDISP" class="muted">(0)</span></div>
-      <div id="dispList" class="hlist"></div>
-    </div>
-
-    <div class="hgroup">
-      <div class="hlabel">INDISPONÍVEL <span id="cntIND" class="muted">(0)</span></div>
-      <div id="indList" class="hlist"></div>
+  <!-- LOGIN -->
+  <div id="loginBox" class="loginWrap" style="display:none; padding:24px;">
+    <h1>Acesso restrito</h1>
+    <label>Email
+      <input id="lgEmail" class="input" type="email" placeholder="voce@empresa.com">
+    </label>
+    <label>Senha
+      <input id="lgPass" class="input" type="password" placeholder="••••••••">
+    </label>
+    <div class="loginRow">
+      <button id="btnLogin" class="btn primary" style="width:160px"><span class="material-symbols-rounded">login</span>&nbsp;Entrar</button>
+      <span id="lgErr" class="err"></span>
     </div>
   </div>
 
-  <!-- Modal container -->
+  <!-- DASHBOARD -->
+  <div id="dashWrap" style="display:none">
+    <div class="wrap">
+      <!-- Filtros globais -->
+      <div class="filters">
+        <div class="row" style="flex:1;flex-wrap:wrap">
+          <label>Data <input class="input" type="date" id="fData"></label>
+          <label>Status
+            <select id="fStatus">
+              <option value="">Todos</option>
+              <option value="DISPONIVEL">Disponível</option>
+              <option value="INDISPONIVEL">Indisponível</option>
+            </select>
+          </label>
+          <label>Buscar <input class="input" id="fBusca" placeholder="Prefixo, CMTE, Mecânico..."></label>
+        </div>
+        <div class="row">
+          <button class="btn" id="btnHoje"><span class="material-symbols-rounded">calendar_month</span>&nbsp;Hoje</button>
+          <button class="btn primary" id="btnFiltrar"><span class="material-symbols-rounded">tune</span>&nbsp;Aplicar</button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpis">
+        <div class="kpi">
+          <div class="icon i-green">✓</div>
+          <div><h3>Disponíveis</h3><div class="val" id="kDisp">—</div></div>
+        </div>
+
+  <div class="kpi">
+    <div class="icon i-red">⛔</div>
+    <div><h3>Indisponíveis</h3><div class="val" id="kInd">—</div></div>
+  </div>
+
+  <div class="kpi">
+    <div class="icon i-blue">⏱</div>
+    <div><h3>Horas no mês</h3><div class="val" id="kHoras">—</div></div>
+  </div>
+</div>
+
+      <!-- ====== BLOCO EXPORTÁVEL ====== -->
+      <div id="exportArea">
+
+      <!-- Programação -->
+      <div class="section">
+        <h2>Programação</h2>
+        <div class="row">
+          <label>Base
+            <select id="progBase" style="min-width:180px">
+              <option value="">Todas</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+<!-- FAIXA: DISPONÍVEL (DISPONÍVEL) -->
+<div class="hgroup">
+  <div class="hline">
+    <span class="hlabel">DISPONÍVEL <span class="muted" id="cntDISP">(0)</span></span>
+    <span class="hdivider"></span>
+  </div>
+  <div class="hlist" id="dispList"></div>
+</div>
+
+<!-- FAIXA: INDISPONÍVEL (MNT) -->
+<div class="hgroup">
+  <div class="hline">
+    <span class="hlabel">INDISPONÍVEL <span class="muted" id="cntIND">(0)</span></span>
+    <span class="hdivider"></span>
+  </div>
+  <div class="hlist" id="indList"></div>
+</div>
+
+        <!-- Pizza -->
+        <div class="section">
+          <h2>Status do dia</h2>
+          <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
+            <div class="muted" id="pie_date_hint"></div>
+            <div style="flex:1"></div>
+            <label>Base
+              <select id="pieBase" style="min-width:180px">
+                <option value="">Todas</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div id="pie_div"></div>
+      </div>
+
+      <div class="divider"><span class="label">Indicadores de Disponibilidade</span></div>
+
+      <!-- Gráfico barras -->
+      <div class="section">
+        <h2>Disponíveis x Indisponíveis</h2>
+        <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
+          <label>Base
+            <select id="baseChart" style="min-width:180px">
+              <option value="">Todas</option>
+            </select>
+          </label>
+          <label>Aeronave
+            <select id="prefChart" style="min-width:160px">
+              <option value="">Todas</option>
+            </select>
+          </label>
+          <div style="flex:1"></div>
+          <label>Período
+            <select id="rangeSel">
+              <option value="15d">15 dias</option>
+              <option value="30d" selected>30 dias</option>
+              <option value="60d">60 dias</option>
+              <option value="90d">90 dias</option>
+              <option value="180d">180 dias</option>
+              <option value="12m">12 meses</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div id="chart_div"></div>
+
+      <!-- Pareto -->
+      <div class="section">
+        <h2>Pareto • Motivos de Manutenção</h2>
+        <div class="row" style="gap:14px; align-items:center; flex-wrap:wrap">
+          <label>Período
+            <select id="paretoRangeSel">
+              <option value="15d">15 dias</option>
+              <option value="30d" selected>30 dias</option>
+              <option value="60d">60 dias</option>
+              <option value="90d">90 dias</option>
+              <option value="180d">180 dias</option>
+              <option value="12m">12 meses</option>
+            </select>
+          </label>
+
+          <!-- MultiSelect Bases -->
+          <div class="ms" id="msBases">
+            <div class="ms-btn"><span>Todos as Bases</span><span class="material-symbols-rounded" style="font-size:18px">expand_more</span></div>
+            <div class="ms-panel">
+              <div class="ms-title">Bases</div>
+              <div class="ms-row"><input type="checkbox" id="msBases_all"><label for="msBases_all">Selecionar todas</label></div>
+              <div id="msBases_list"></div>
+              <div class="ms-footer">
+                <button class="btn" type="button" id="msBases_clear">Limpar</button>
+                <button class="btn primary" type="button" id="msBases_apply">Aplicar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- MultiSelect Prefixos -->
+          <div class="ms" id="msPrefixos">
+            <div class="ms-btn"><span>Todas as Aeronaves</span><span class="material-symbols-rounded" style="font-size:18px">expand_more</span></div>
+            <div class="ms-panel">
+              <div class="ms-title">Aeronaves</div>
+              <div class="ms-row"><input type="checkbox" id="msPrefixos_all"><label for="msPrefixos_all">Selecionar todas</label></div>
+              <div id="msPrefixos_list"></div>
+              <div class="ms-footer">
+                <button class="btn" type="button" id="msPrefixos_clear">Limpar</button>
+                <button class="btn primary" type="button" id="msPrefixos_apply">Aplicar</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div id="pareto_div"></div>
+
+      <div class="foot">Atualiza a partir da sua planilha (Apps Script como API) • Visual restrito</div>
+    </div>
+  </div>
+
+  <!-- Modal placeholder (inserido dinamicamente) -->
   <div id="editModal" style="display:none"></div>
 
   <script>
-    // ================= CONFIG =================
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwGNWh1CxWxT_yA9E23V4j6ossYmOA1Tt2gn58Xp8DhY3vOGMGJjtiWuLZUn6gqiAY/exec'; // <-- substitua pela sua URL
-    // ==========================================
+    // ======= CONFIGURAÇÃO =======
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwGNWh1CxWxT_yA9E23V4j6ossYmOA1Tt2gn58Xp8DhY3vOGMGJjtiWuLZUn6gqiAY/exec'; // <--- substitua pela sua URL de deploy
+    // ============================
 
+    google.charts.load('current', {'packages':['corechart']});
     const $ = s => document.querySelector(s);
-    const $$ = s => document.querySelectorAll(s);
-    const debounce = (fn,ms=300)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); } };
-
-    // token handling (se usa login)
+    const debounce = (fn,ms=350)=>{ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);}};
     const TOK_KEY='dash_t';
     function getToken(){ return localStorage.getItem(TOK_KEY)||''; }
     function setToken(t){ if(t) localStorage.setItem(TOK_KEY,t); else localStorage.removeItem(TOK_KEY); }
 
-    let LOOKUPS = { bases:[], prefixos:[], missoes:[], comandantes:[], copilotos:[], mecanicos:[] };
+    // Horas do mês por aeronave (preenchido em refreshAll)
     let HORAS_MAP = {};
+    const getHoras = (pref) => Number(HORAS_MAP[String(pref||'').trim()] || 0);
 
+    // Últimos lookups recebidos (bases, prefixos, missoes, comandantes, mecanicos)
+    let LOOKUPS = { bases:[], prefixos:[], missoes:[], comandantes:[], copilotos:[], mecanicos:[] };
+
+    // fetch com proteção contra HTML de erro da implantação
     async function apiFetch(params){
-      const qp = new URLSearchParams(params||{});
+      const qp = new URLSearchParams(params);
       const t = getToken();
       if (t) qp.set('t', t);
+
       const url = API_URL + '?' + qp.toString();
       let text;
       try{
-        const res = await fetch(url, { cache:'no-store' });
+        const res = await fetch(url, { cache: 'no-store' });
         text = await res.text();
       }catch(e){
         throw new Error('Falha de rede ao acessar a API: ' + e.message);
       }
+
       let json;
-      try{ json = JSON.parse(text); }catch(e){ throw new Error('A API não retornou JSON. Resposta: ' + text.slice(0,200)); }
-      if (json && json.error === 'UNAUTHORIZED'){ setToken(''); throw new Error('UNAUTHORIZED'); }
+      try{
+        json = JSON.parse(text);
+      }catch(e){
+        throw new Error('A API não retornou JSON. Verifique a URL/implantação. Resposta: ' + text.slice(0,200));
+      }
+
+      if (json && json.error === 'UNAUTHORIZED'){
+        setToken(''); showLogin(); throw new Error('UNAUTHORIZED');
+      }
       return json;
     }
+
+    async function checkMe(){
+      const t=getToken(); if(!t) return false;
+      const r = await apiFetch({fn:'me'}).catch(()=>null);
+      if (r && r.ok && r.data && r.data.ok){
+        const email = r.data.email || '';
+        $('#userEmail').textContent=email;
+        $('#userEmail').style.display='inline';
+        $('#btnLogout').style.display='inline-flex';
+        return true;
+      }
+      return false;
+    }
+    async function login(){
+      const email=$('#lgEmail').value.trim();
+      const password=$('#lgPass').value;
+      $('#lgErr').textContent='';
+      try{
+        const r = await apiFetch({fn:'login', email, password});
+        const data = r.data || {};
+        if (!data.ok){ $('#lgErr').textContent = data.error || 'Falha no login'; return; }
+        setToken(data.token); $('#lgPass').value=''; showDash(); await refreshAll();
+      }catch(err){ $('#lgErr').textContent = 'Erro ao autenticar'; }
+    }
+    async function logout(){
+      const t=getToken(); if(t){ await apiFetch({fn:'logout'}).catch(()=>{}); }
+      setToken(''); $('#userEmail').style.display='none'; $('#btnLogout').style.display='none'; showLogin();
+    }
+    function showLogin(){ $('#loginBox').style.display='block'; $('#dashWrap').style.display='none'; }
+    function showDash(){ $('#loginBox').style.display='none'; $('#dashWrap').style.display='block'; }
+
+    /* ===== MultiSelect ===== */
+    function createMultiSelect(rootId, placeholder){
+      const root = document.getElementById(rootId);
+      const btn  = root.querySelector('.ms-btn');
+      const panel= root.querySelector('.ms-panel');
+      const all  = root.querySelector(`#${rootId}_all`);
+      const list = root.querySelector(`#${rootId}_list`);
+      const apply= root.querySelector(`#${rootId}_apply`);
+      const clear= root.querySelector(`#${rootId}_clear`);
+      let items = []; let selected = new Set();
+      const updateBtn = ()=>{ if(selected.size===0) btn.querySelector('span').textContent=placeholder;
+        else if (selected.size===items.length) btn.querySelector('span').textContent='Todos';
+        else if (selected.size===1) btn.querySelector('span').textContent=[...selected][0];
+        else btn.querySelector('span').textContent=`${selected.size} selecionadas`; };
+      const render = ()=>{ list.innerHTML = items.map(v=>`<div class="ms-row"><input type="checkbox" id="${rootId}_${v}" value="${v}" ${selected.has(v)?'checked':''}><label for="${rootId}_${v}">${v}</label></div>`).join(''); all.checked = selected.size===items.length && items.length>0; updateBtn(); };
+      btn.addEventListener('click', (e)=>{ e.stopPropagation(); root.classList.toggle('open'); });
+      document.addEventListener('click', ()=> root.classList.remove('open')); panel.addEventListener('click', (e)=> e.stopPropagation());
+      all.addEventListener('change', ()=>{ selected = all.checked ? new Set(items) : new Set(); render(); });
+      list.addEventListener('change', (e)=>{ if (e.target && e.target.type==='checkbox'){ const v=e.target.value; if (e.target.checked) selected.add(v); else selected.delete(v); all.checked = selected.size===items.length; updateBtn(); }});
+      clear.addEventListener('click', ()=>{ selected.clear(); all.checked=false; render(); });
+      apply.addEventListener('click', ()=>{ root.classList.remove('open'); refreshPareto(); });
+      return { setItems(arr){ items=[...arr]; selected.clear(); render(); }, values(){ return [...selected]; }, setSelected(arr){ const set = new Set(arr||[]); selected = new Set(items.filter(v => set.has(v))); render(); } };
+    }
+    const msBases    = createMultiSelect('msBases','Todas as Bases');
+    const msPrefixos = createMultiSelect('msPrefixos','Todas as Aeronaves');
 
     function chip(status){
       const S = String(status||'').toUpperCase();
@@ -154,226 +426,408 @@
       return `<span class="chip">${status||'-'}</span>`;
     }
 
-    function renderListaGrouped(rows){
-      const DISP=[]; const IND=[];
+    // === Substitui a função renderListaGrouped antiga por esta (inclui data-prefixo e interatividade) ===
+   function renderListaGrouped(rows){
+      const baseSel = $('#progBase').value || '';
+      const norm = s => String(s||'').toLowerCase();
+
+      const DISP = []; // Disponível
+      const IND  = []; // Indisponível (MNT)
+
       for (const r of rows){
+        if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
         const st = String(r.Status||'').toUpperCase();
+
+        const horas = getHoras(r.Prefixo);
+        const horasChip = horas > 0
+          ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
+          : '';
+
+        // prefixo com attribute data-prefixo and clickable class
         const cardHtml = `
-          <div class="card" data-prefixo="${r.Prefixo||''}">
+          <div class="card" data-prefixo-card="${r.Prefixo||''}">
             <div class="title">
-              <div class="prefixo" data-prefixo="${r.Prefixo||''}">${r.Prefixo||'-'}</div>
-              <div>${chip(r.Status)}</div>
+              <div class="prefixo" data-prefixo="${r.Prefixo||''}" title="Clique para alterar o status">${r.Prefixo||'-'}</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                ${horasChip}
+                ${chip(r.Status)}
+              </div>
             </div>
             <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
             <div class="meta">
               <div><b>Missão:</b> ${r.Missao||'-'}</div>
               <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
               <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
-              ${r.Motivo_Manutencao ? `<div><b>Motivo:</b> ${r.Motivo_Manutencao}</div>` : ''}
-              ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ''}
+              ${r.Motivo_Manutencao ? `<div><b>Motivo:</b> ${r.Motivo_Manutencao}</div>` : ``}
+              ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
             </div>
+            ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
           </div>`;
-        if (st==='MNT' || st==='INDISPONIVEL') IND.push(cardHtml); else DISP.push(cardHtml);
+
+        if (st==='MNT') IND.push(cardHtml);
+        else           DISP.push(cardHtml);
       }
+
       $('#dispList').innerHTML = DISP.length ? DISP.join('') : `<div class="muted">—</div>`;
       $('#indList').innerHTML  = IND.length  ? IND.join('')  : `<div class="muted">—</div>`;
+
       $('#cntDISP').textContent = `(${DISP.length})`;
       $('#cntIND').textContent  = `(${IND.length})`;
     }
 
+    /* Charts */
+    function drawColumns(rows, isMonthly){
+      const dt = new google.visualization.DataTable();
+      dt.addColumn('string', isMonthly ? 'Mês' : 'Data');
+      dt.addColumn('number','Disponível');
+      dt.addColumn('number','Indisponível');
+      (isMonthly ? rows.map(r=>[String(r.Mes), +r['Disponível']||0, +r['Indisponível']||0])
+                 : rows.map(r=>[String(r.Data), +r['Disponível']||0, +r['Indisponível']||0])
+      ).forEach(r=>dt.addRow(r));
+      const options = {
+        legend:{ position:'bottom', textStyle:{ color:'#cbd5e1' } },
+        backgroundColor:'transparent',
+        hAxis:{ textStyle:{ color:'#94a3b8' } },
+        vAxis:{ textStyle:{ color:'#94a3b8' }, gridlines:{ color:'#1f2937' } },
+        chartArea:{ left:40, top:10, right:10, height:260 },
+        height:360,
+        isStacked:false,
+        series:{ 0:{ color:'#22c55e' }, 1:{ color:'#ef4444' } }
+      };
+      new google.visualization.ColumnChart($('#chart_div')).draw(dt, options);
+    }
+    function drawPie(rows, date){
+      const dt = new google.visualization.DataTable();
+      dt.addColumn('string','Status'); dt.addColumn('number','Qtde');
+      rows.forEach(r=> dt.addRow([r.Status, Number(r.Qtde||0)]));
+      $('#pie_date_hint').textContent = 'Dia: '+date;
+      const options = {
+        pieHole:0.55, legend:{position:'bottom', textStyle:{color:'#cbd5e1'}},
+        backgroundColor:'transparent',
+        chartArea:{ left:10, top:10, right:10, height:180 },
+        slices:{ 0:{color:'#22c55e'}, 1:{color:'#3b82f6'}, 2:{color:'#ef4444'} }
+      };
+      new google.visualization.PieChart($('#pie_div')).draw(dt, options);
+    }
+    function drawPareto(rows){
+      const dt = new google.visualization.DataTable();
+      dt.addColumn('string','Motivo'); dt.addColumn('number','Qtde'); dt.addColumn({type:'string', role:'annotation'});
+      rows.forEach(r=> dt.addRow([r.Motivo, Number(r.Qtde||0), String(r.Qtde||0)]));
+      const options = {
+        backgroundColor:'transparent', legend:'none',
+        annotations:{ textStyle:{ color:'#e5e7eb', bold:true }},
+        hAxis:{ textStyle:{ color:'#94a3b8' }, gridlines:{ color:'#1f2937' }, minValue:0 },
+        vAxis:{ textStyle:{ color:'#94a3b8' } },
+        colors:['#ef4444'], chartArea:{ left:120, top:10, right:20, height:260 }, height:360
+      };
+      new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
+    }
+
+    /* Dashboard loader */
     async function refreshAll(){
-      const date = $('#fData').value || '';
-      const status = $('#fStatus').value || '';
-      const search = $('#fBusca').value || '';
-      try{
-        const res = await apiFetch({ fn:'dashboard', date, status, search });
-        if (!res || !res.ok) { console.error('Erro dashboard', res); return; }
-        const data = res.data || {};
-        LOOKUPS = data.lookups || LOOKUPS;
-        // update UI lists
-        renderListaGrouped(data.list || []);
-        // KPIs
-        $('#kDisp').textContent = (data.kpis && data.kpis.disponiveis) || '0';
-        $('#kInd').textContent  = (data.kpis && data.kpis.manutencao) || '0';
-        // horas
-        try{
-          const h = await apiFetch({ fn:'horas', date });
-          let totalHoras = 0;
-          if (h && h.ok && h.data){
-            HORAS_MAP = {};
-            if (Array.isArray(h.data.rows)) h.data.rows.forEach(r => HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0));
-            totalHoras = Number(h.data.total || 0) || Object.values(HORAS_MAP).reduce((s,v)=>s+(Number(v)||0),0);
-          }
-          $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{ minimumFractionDigits:1, maximumFractionDigits:1 });
-        }catch(e){ $('#kHoras').textContent = '0.0'; }
-      }catch(err){
-        console.error(err);
-        alert('Erro ao atualizar dashboard: ' + (err.message||err));
-      }
-    }
+      const date    = $('#fData').value || '';
+      const status  = $('#fStatus').value || '';
+      const search  = $('#fBusca').value || '';
+      const range   = $('#rangeSel').value || '30d';
+      const base    = $('#baseChart').value || '';
+      const prefixo = $('#prefChart').value || '';
 
-    // Quando salvar, movemos o card imediatamente (otimista) e chamamos API.
-    async function setStatusPrefixo(prefixo, status, extras){
-      // local DOM move otimista
-      const selector = `.card[data-prefixo="${prefixo}"]`;
-      const card = document.querySelector(selector);
-      let moved = false;
+      const progBaseVal = $('#progBase').value || '';
+      const pieBaseSel  = $('#pieBase').value || '';
+      const pieBase     = progBaseVal !== '' ? progBaseVal : pieBaseSel;
+
+      const paretoBasesCSV    = msBases.values().join(',');
+      const paretoPrefixosCSV = msPrefixos.values().join(',');
+
+      // 1) HORAS DO MÊS -> preencher mapa para usar nos cards da programação
+      HORAS_MAP = {};
       try{
-        if (card){
-          // determine target list
-          const target = (status === 'MNT' || status === 'INDISPONIVEL') ? $('#indList') : $('#dispList');
-          target.insertBefore(card, target.firstChild);
-          moved = true;
+        const h = await apiFetch({ fn:'horas', date });
+        if (h && h.ok && h.data && Array.isArray(h.data.rows)){
+          h.data.rows.forEach(r => {
+            HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0);
+          });
         }
-        const params = Object.assign({ fn:'setstatus', prefixo, status }, extras||{});
-        const r = await apiFetch(params);
-        if (!r || !r.ok) throw new Error((r && r.error) || 'Falha ao salvar');
-        // good: optionally refresh a minimal part or full
-        setTimeout(refreshAll, 250); // pega eventual consistência do servidor; leve atraso para evitar spike
-        return r.data;
-      }catch(err){
-        // revert if moved
-        await refreshAll();
-        throw err;
+      }catch(e){ /* segue sem horas se falhar */ }
+
+      // 2) RESTO DO DASH
+      const qs = { fn:'dashboard', date, status, search, range, base, prefixos: prefixo, pieBase,
+                   paretoBases: paretoBasesCSV, paretoPrefixos: paretoPrefixosCSV };
+      const res = await apiFetch(qs);
+      const data = res.data;
+
+      // atualiza LOOKUPS globais
+      LOOKUPS = data.lookups || LOOKUPS;
+
+      if ($('#baseChart').options.length<=1){
+        const basesOpt   = '<option value="">Todas</option>' + data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
+        const prefOpt    = '<option value="">Todas</option>' + data.lookups.prefixos.map(v=>`<option>${v}</option>`).join('');
+        $('#baseChart').innerHTML = basesOpt;
+        $('#pieBase').innerHTML   = basesOpt;
+        $('#progBase').innerHTML  = basesOpt;
+        $('#prefChart').innerHTML = prefOpt;
+
+        msBases.setItems(data.lookups.bases);
+        msPrefixos.setItems(data.lookups.prefixos);
       }
+
+      renderListaGrouped(data.list);
+      // Total vindo do backend (deduplicado/filtrado). Fallback = soma do mapa.
+      let totalHoras = 0;
+      try{
+        const h = await apiFetch({ fn:'horas', date });
+        if (h && h.ok && h.data){
+          // preencher HORAS_MAP (para chips nos cards)
+          HORAS_MAP = {};
+          if (Array.isArray(h.data.rows)){
+            h.data.rows.forEach(r => {
+              HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0);
+            });
+          }
+          totalHoras = Number(h.data.total || 0);
+          if (!totalHoras){
+            totalHoras = Object.values(HORAS_MAP).reduce((acc,v)=>acc+(Number(v)||0),0);
+          }
+        }
+      }catch(e){ /* mantém 0 em caso de erro */ }
+
+      $('#kDisp').textContent  = data.kpis.disponiveis ?? '0';
+      $('#kInd').textContent   = data.kpis.manutencao ?? '0';
+      $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
+        minimumFractionDigits:1, maximumFractionDigits:1
+      });
+
+      google.charts.setOnLoadCallback(()=> {
+        try{ drawPie(data.pie, date); }catch(e){ console.warn(e); }
+        try{ drawColumns(data.series, range==='12m'); }catch(e){ console.warn(e); }
+        try{ drawPareto(data.pareto); }catch(e){ console.warn(e); }
+      });
+    }
+    const refreshPareto = debounce(refreshAll, 150);
+
+    /* ===== Funções para alterar status via API (setstatus) ===== */
+    async function setStatusPrefixo(prefixo, status, extras={}){
+      const params = {
+        fn: 'setstatus',
+        prefixo,
+        status,
+        missao: extras.missao||'',
+        comandante: extras.comandante||'',
+        mecanico: extras.mecanico||'',
+        obs: extras.obs||'',
+        motivoCategoria: extras.motivoCategoria||''
+      };
+      const r = await apiFetch(params);
+      if (!r || !r.ok) throw new Error((r && r.error) || 'Falha ao salvar');
+      // clear related caches to force fresh data next read
+      // (não temos acesso direto ao CacheService do Apps Script daqui, então apenas re-fetch)
+      return r.data;
     }
 
-    // Modal HTML (campos empilhados)
-    function buildModalHtml(prefixo){
-      const missoes = LOOKUPS.missoes || [];
-      const cmtes   = LOOKUPS.comandantes || [];
-      const mecs    = LOOKUPS.mecanicos || [];
+    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC + Motivo categoria ===== */
+    function buildModalHtml(prefixo, lookups){
+      // fallback arrays seguros
+      const missoes = (lookups && lookups.missoes) ? lookups.missoes : [];
+      const cmtes   = (lookups && lookups.comandantes) ? lookups.comandantes : [];
+      const mecs    = (lookups && lookups.mecanicos) ? lookups.mecanicos : [];
+
       return `
       <div class="modal-backdrop" id="modalBackdrop">
         <div class="modal" role="dialog" aria-modal="true">
           <h3>Editar status — ${prefixo}</h3>
-          <div class="row small">Escolha 1 = Disponível ou 2 = Indisponível</div>
+          <div class="row stack">
+            <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
+            <div style="display:flex;gap:8px;margin-top:6px">
+              <button id="optDisponivel" class="btn primary">1 — Disponível</button>
+              <button id="optIndisponivel" class="btn">2 — Indisponível</button>
+            </div>
 
-          <div class="row" style="display:flex;gap:8px;margin-top:8px">
-            <button id="optDisponivel" class="btn primary" style="flex:1">1 — Disponível</button>
-            <button id="optIndisponivel" class="btn" style="flex:1">2 — Indisponível</button>
-          </div>
-
-          <div class="row" style="margin-top:12px">
             <label>Missão
               <select id="selMissao" class="input">
                 <option value="">— Selecione —</option>
-                ${missoes.map(m=>`<option>${m}</option>`).join('')}
+                ${missoes.map(m => `<option>${m}</option>`).join('')}
                 <option value="__OUTRO__">Outro (digitar)</option>
               </select>
-              <input id="inpMissao" class="input" style="display:none;margin-top:8px" placeholder="Digite a missão">
+              <input id="inpMissao" class="input" style="display:none;margin-top:6px" placeholder="Digite a missão">
             </label>
-          </div>
 
-          <div class="row">
             <label>Comandante
               <select id="selCmte" class="input">
                 <option value="">— Selecione —</option>
-                ${cmtes.map(m=>`<option>${m}</option>`).join('')}
+                ${cmtes.map(m => `<option>${m}</option>`).join('')}
                 <option value="__OUTRO__">Outro (digitar)</option>
               </select>
-              <input id="inpCmte" class="input" style="display:none;margin-top:8px" placeholder="Digite o comandante">
+              <input id="inpCmte" class="input" style="display:none;margin-top:6px" placeholder="Digite o comandante">
             </label>
-          </div>
 
-          <div class="row">
             <label>Mecânico
               <select id="selMec" class="input">
                 <option value="">— Selecione —</option>
-                ${mecs.map(m=>`<option>${m}</option>`).join('')}
+                ${mecs.map(m => `<option>${m}</option>`).join('')}
                 <option value="__OUTRO__">Outro (digitar)</option>
               </select>
-              <input id="inpMec" class="input" style="display:none;margin-top:8px" placeholder="Digite o mecânico">
+              <input id="inpMec" class="input" style="display:none;margin-top:6px" placeholder="Digite o mecânico">
             </label>
-          </div>
 
-          <div class="row">
             <label>Motivo (categoria)
-              <select id="selMotivoCat" class="input">
+              <select id="selMotivoCategoria" class="input">
                 <option value="">— Categoria —</option>
                 <option value="Programada">Programada</option>
                 <option value="Discrepância">Discrepância</option>
                 <option value="Administrativa">Administrativa</option>
               </select>
             </label>
-          </div>
 
-          <div class="row">
             <label>Observações
               <input id="inpObs" class="input" placeholder="Observações (opcional)">
             </label>
-          </div>
 
-          <div class="actions">
-            <button id="btnCancel" class="btn">Cancelar</button>
-            <button id="btnSave" class="btn primary">Salvar</button>
+            <div class="actions">
+              <button id="btnCancel" class="btn">Cancelar</button>
+              <button id="btnSave" class="btn primary">Salvar</button>
+            </div>
           </div>
         </div>
       </div>
       `;
     }
 
-    // abre modal e conecta handlers
-    function showEditModal(prefixo){
-      // remove existente
+    async function showEditModal(prefixo){
+      // garante lookups atualizados (tenta cache LOOKUPS, senão busca)
+      try{
+        if (!LOOKUPS || !LOOKUPS.missoes || LOOKUPS.missoes.length===0){
+          const res = await apiFetch({ fn: 'lookups' });
+          if (res && res.ok && res.data) LOOKUPS = res.data;
+        }
+      }catch(e){
+        console.warn('Não foi possível carregar lookups:', e);
+      }
+
+      // remove modal anterior
       const existing = document.getElementById('modalBackdrop');
       if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
 
-      // criar
       const container = document.createElement('div');
-      container.innerHTML = buildModalHtml(prefixo);
-      document.body.appendChild(container.firstElementChild);
+      container.innerHTML = buildModalHtml(prefixo, LOOKUPS);
+      document.body.appendChild(container.firstElementChild); // anexa only the backdrop
 
+      // elements
+      const bp = document.getElementById('modalBackdrop');
       const selMissao = document.getElementById('selMissao');
-      const selCmte = document.getElementById('selCmte');
-      const selMec = document.getElementById('selMec');
+      const selCmte   = document.getElementById('selCmte');
+      const selMec    = document.getElementById('selMec');
       const inpMissao = document.getElementById('inpMissao');
-      const inpCmte = document.getElementById('inpCmte');
-      const inpMec = document.getElementById('inpMec');
+      const inpCmte   = document.getElementById('inpCmte');
+      const inpMec    = document.getElementById('inpMec');
+      const inpObs    = document.getElementById('inpObs');
+      const selMotivo = document.getElementById('selMotivoCategoria');
 
-      selMissao && selMissao.addEventListener('change', ()=> inpMissao.style.display = selMissao.value==='__OUTRO__' ? 'block' : 'none');
-      selCmte && selCmte.addEventListener('change', ()=> inpCmte.style.display = selCmte.value==='__OUTRO__' ? 'block' : 'none');
-      selMec && selMec.addEventListener('change', ()=> inpMec.style.display = selMec.value==='__OUTRO__' ? 'block' : 'none');
+      // toggle "Outro (digitar)"
+      selMissao && selMissao.addEventListener('change', ()=> { inpMissao.style.display = selMissao.value==='__OUTRO__' ? 'block' : 'none'; });
+      selCmte   && selCmte.addEventListener('change', ()=> { inpCmte.style.display   = selCmte.value==='__OUTRO__' ? 'block' : 'none'; });
+      selMec    && selMec.addEventListener('change', ()=> { inpMec.style.display    = selMec.value==='__OUTRO__' ? 'block' : 'none'; });
 
-      document.getElementById('btnCancel').addEventListener('click', ()=> {
-        const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b);
-      });
-
+      // Buttons
+      document.getElementById('btnCancel').addEventListener('click', ()=> { const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b); });
       document.getElementById('btnSave').addEventListener('click', async ()=>{
+        // decide status via button class presence
         const sDisp = document.getElementById('optDisponivel').classList.contains('primary');
-        const status = sDisp ? 'STAND BY' : 'MNT';
-        const missao = (selMissao && selMissao.value==='__OUTRO__') ? (inpMissao.value.trim()||'') : (selMissao ? selMissao.value : '');
-        const comandante = (selCmte && selCmte.value==='__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte ? selCmte.value : '');
-        const mecanico = (selMec && selMec.value==='__OUTRO__') ? (inpMec.value.trim()||'') : (selMec ? selMec.value : '');
-        const obs = (document.getElementById('inpObs')||{value:''}).value.trim();
-        const motivo_categoria = (document.getElementById('selMotivoCat')||{value:''}).value || '';
+        const sInd  = document.getElementById('optIndisponivel').classList.contains('primary');
+        let status = sDisp ? 'DISPONIVEL' : (sInd ? 'INDISPONIVEL' : 'DISPONIVEL');
 
+        const missao = (selMissao && selMissao.value === '__OUTRO__') ? (inpMissao.value.trim()||'') : (selMissao ? selMissao.value : '');
+        const comandante = (selCmte && selCmte.value === '__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte ? selCmte.value : '');
+        const mecanico = (selMec && selMec.value === '__OUTRO__') ? (inpMec.value.trim()||'') : (selMec ? selMec.value : '');
+        const obs = inpObs ? inpObs.value.trim() : '';
+        const motivoCategoria = selMotivo ? selMotivo.value : '';
+
+        // Optimistic UI update: move card immediately
         try{
-          await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, obs, motivo_categoria, date: $('#fData').value || '' });
+          optimisticSet(prefixo, status, { missao, comandante, mecanico, obs, motivoCategoria });
+        }catch(e){
+          console.warn('optimistic update failed', e);
+        }
+
+        // call API to persist
+        try{
+          await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, obs, motivoCategoria });
+          // close modal
           const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b);
-          // já movemos otimisticamente; atualiza estado final em background
-          setTimeout(refreshAll, 300);
+          // refresh in background to update charts & counts
+          setTimeout(()=>refreshAll(), 250);
         }catch(err){
           alert('Erro ao salvar: ' + (err.message||err));
+          // revert UI (fast refresh)
           await refreshAll();
         }
       });
 
+      // Quick toggle behaviour
       const btnDisp = document.getElementById('optDisponivel');
       const btnInd  = document.getElementById('optIndisponivel');
-      function setActive(which){
+      const setActive = (which)=>{
         if (which==='disp'){ btnDisp.classList.add('primary'); btnInd.classList.remove('primary'); }
         else { btnInd.classList.add('primary'); btnDisp.classList.remove('primary'); }
-      }
+      };
       btnDisp.addEventListener('click', ()=> setActive('disp'));
       btnInd.addEventListener('click', ()=> setActive('ind'));
       setActive('disp');
 
       // fechar clicando fora
-      document.getElementById('modalBackdrop').addEventListener('click', (ev)=>{ if (ev.target.id==='modalBackdrop'){ const b=document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b); } });
+      bp.addEventListener('click', (ev)=>{ if (ev.target === bp){ if (bp && bp.parentNode) bp.parentNode.removeChild(bp); } });
     }
 
-    // delegação de clique para prefixos (dinâmicos)
+    // Optimistic UI: change card immediately before API returns
+    function optimisticSet(prefixo, status, extras){
+      // find card element(s) with data-prefixo-card or inner prefixo
+      const cards = document.querySelectorAll(`[data-prefixo-card="${prefixo}"], .prefixo[data-prefixo="${prefixo}"]`);
+      // If found the card wrapper, move to appropriate container and change chip
+      // We'll find the nearest .card containing the prefixo text
+      for (const el of document.querySelectorAll('.card')){
+        const p = el.querySelector('.prefixo');
+        if (!p) continue;
+        const val = (p.getAttribute('data-prefixo')||p.textContent||'').trim();
+        if (val===prefixo){
+          // update chip HTML
+          const chipHtml = (status==='INDISPONIVEL' ? '<span class="chip mt">INDISPONÍVEL</span>' : '<span class="chip sb">DISPONÍVEL</span>');
+          // replace existing chip (last item in title)
+          const titleRight = el.querySelector('.title > div:last-child');
+          if (titleRight) {
+            // remove existing chip(s) and append new chip
+            titleRight.innerHTML = (extras && getHoras(prefixo) ? `<span class="chip hr">${getHoras(prefixo).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>` : '') + chipHtml;
+          }
+          // update mission/comandante/mec display
+          const meta = el.querySelector('.meta');
+          if (meta){
+            const lines = [];
+            lines.push(`<div><b>Missão:</b> ${extras.missao || '-'}</div>`);
+            lines.push(`<div><b>CMTE:</b> ${extras.comandante || '-'}</div>`);
+            lines.push(`<div><b>MEC:</b> ${extras.mecanico || '-'}</div>`);
+            if (extras.motivoCategoria) lines.push(`<div><b>Motivo:</b> ${extras.motivoCategoria}</div>`);
+            if (extras.previsao) lines.push(`<div><b>Previsão:</b> ${extras.previsao}</div>`);
+            meta.innerHTML = lines.join('');
+          }
+          // move card
+          if (status==='INDISPONIVEL'){
+            // append to indList
+            $('#indList').insertAdjacentElement('afterbegin', el);
+          } else {
+            $('#dispList').insertAdjacentElement('afterbegin', el);
+          }
+          break;
+        }
+      }
+      // update counters quickly
+      // quick recount
+      setTimeout(()=> {
+        const dispCount = document.querySelectorAll('#dispList .card').length;
+        const indCount = document.querySelectorAll('#indList .card').length;
+        $('#cntDISP').textContent = `(${dispCount})`;
+        $('#cntIND').textContent = `(${indCount})`;
+      }, 40);
+    }
+
+    // Delegação de clique: garante que prefixos dinâmicos abram modal
     document.addEventListener('click', (ev) => {
       const el = ev.target.closest('.prefixo[data-prefixo]');
       if (!el) return;
@@ -382,17 +836,80 @@
       showEditModal(prefixo);
     });
 
-    // eventos UI
+    /* Eventos */
     $('#btnFiltrar').addEventListener('click', refreshAll);
+    $('#btnHoje').addEventListener('click', ()=>{ $('#fData').value = new Date().toISOString().slice(0,10); refreshAll(); });
     $('#btnRefresh').addEventListener('click', refreshAll);
-    $('#fBusca').addEventListener('input', debounce(refreshAll, 350));
-    document.addEventListener('keydown', (e)=>{ if (e.key==='Enter' && document.getElementById('modalBackdrop')) { e.preventDefault(); } });
+    $('#btnLogout').addEventListener('click', logout);
+    $('#btnLogin').addEventListener('click', login);
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && $('#loginBox').style.display!=='none') login(); });
 
-    // init
+    $('#baseChart').addEventListener('change', ()=>{ refreshAll(); });
+    $('#prefChart').addEventListener('change', ()=>{ refreshAll(); });
+    $('#rangeSel').addEventListener('change', refreshAll);
+    $('#pieBase').addEventListener('change', refreshAll);
+    $('#progBase').addEventListener('change', ()=>{ $('#pieBase').value = $('#progBase').value || ''; refreshAll(); });
+
+    $('#paretoRangeSel').addEventListener('change', refreshPareto);
+    $('#fBusca').addEventListener('input', debounce(refreshAll, 400));
+    $('#fStatus').addEventListener('change', refreshAll);
+
     (async function init(){
-      $('#fData').value = new Date().toISOString().slice(0,10);
-      await refreshAll();
+      // começa mostrando o login; se token válido, troca para dash
+      showLogin();
+      try{
+        const ok = await checkMe();
+        if (ok){ showDash(); await refreshAll(); }
+      }catch(e){
+        console.error(e);
+        const el = document.getElementById('lgErr');
+        if (el) el.textContent = 'Erro ao conectar à API. Confira a URL e a implantação.';
+      }
     })();
+
+  /* ====== Baixar PDF ====== */
+  async function downloadPDF(){
+    try{
+      const node = document.getElementById('exportRoot') || document.getElementById('exportArea');
+      if (!node) { alert('Não encontrei a área a exportar (exportRoot/exportArea).'); return; }
+
+      if (!window.html2canvas) { alert('html2canvas não carregado.'); return; }
+      if (!window.jspdf || !window.jspdf.jsPDF) { alert('jsPDF não carregado.'); return; }
+
+      await new Promise(r=>requestAnimationFrame(r));
+      const scale = Math.max(2, (window.devicePixelRatio || 1)) * 1.25;
+      const canvas = await html2canvas(node, {
+        backgroundColor: getComputedStyle(document.body).backgroundColor || '#0b1320',
+        scale,
+        useCORS: true,
+        windowWidth: Math.max(document.documentElement.clientWidth, node.scrollWidth)
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const w = canvas.width, h = canvas.height;
+      const margin = 36;
+      const pdfW = w + margin * 2;
+      const pdfH = h + margin * 2;
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({
+        orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
+        unit: 'pt',
+        format: [pdfW, pdfH]
+      });
+
+      pdf.addImage(imgData, 'PNG', margin, margin, w, h, undefined, 'FAST');
+      pdf.save(`Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`);
+    }catch(err){
+      console.error('Erro ao gerar PDF:', err);
+      alert('Não foi possível gerar o PDF. Veja o console (F12) para detalhes.');
+    }
+  }
+
+  // liga o botão (uma vez só)
+  const btnDl = document.getElementById('btnDownload');
+  if (btnDl) btnDl.onclick = downloadPDF;
   </script>
+
 </body>
 </html>
