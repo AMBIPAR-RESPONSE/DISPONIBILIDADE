@@ -179,9 +179,6 @@
   </div>
 </div>
 
-      
-
-
       <!-- ====== BLOCO EXPORTÁVEL ====== -->
       <div id="exportArea">
 
@@ -214,7 +211,6 @@
   </div>
   <div class="hlist" id="indList"></div>
 </div>
-
 
         <!-- Pizza -->
         <div class="section">
@@ -460,7 +456,7 @@
           <div><b>Missão:</b> ${r.Missao||'-'}</div>
           <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
           <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
-          ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
+          ${r.Motivo_Manutencao ? `<div><b>Motivo:</b> ${r.Motivo_Manutencao}</div>` : ``}
           ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
         </div>
         ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
@@ -608,160 +604,158 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
 
     /* ===== Funções para alterar status via API (setstatus) ===== */
     async function setStatusPrefixo(prefixo, status, extras={}){
-      const params = {
-        fn: 'setstatus',
-        prefixo,
-        status,
-        ...extras
-      };
+      const params = Object.assign({ fn: 'setstatus', prefixo, status }, extras);
       const r = await apiFetch(params);
       if (!r || !r.ok) throw new Error((r && r.error) || 'Falha ao salvar');
       return r.data;
     }
 
-    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC ===== */
+    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC + Motivo ===== */
     function buildModalHtml(prefixo, lookups){
-  // fallback arrays seguros
-  const missoes = (lookups && lookups.missoes) ? lookups.missoes : [];
-  const cmtes   = (lookups && lookups.comandantes) ? lookups.comandantes : [];
-  const mecs    = (lookups && lookups.mecanicos) ? lookups.mecanicos : [];
+      const missoes = (lookups && lookups.missoes) ? lookups.missoes : [];
+      const cmtes   = (lookups && lookups.comandantes) ? lookups.comandantes : [];
+      const mecs    = (lookups && lookups.mecanicos) ? lookups.mecanicos : [];
 
-  return `
-    <div class="modal-backdrop" id="modalBackdrop">
-      <div class="modal" role="dialog" aria-modal="true">
-        <h3>Editar status — ${prefixo}</h3>
-        <div class="row">
-          <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
-          <div style="display:flex;gap:8px;margin-top:6px">
-            <button id="optDisponivel" class="btn primary">1 — Disponível</button>
-            <button id="optIndisponivel" class="btn">2 — Indisponível</button>
+      return `
+        <div class="modal-backdrop" id="modalBackdrop">
+          <div class="modal" role="dialog" aria-modal="true">
+            <h3>Editar status — ${prefixo}</h3>
+            <div class="row">
+              <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <button id="optDisponivel" class="btn primary">1 — Disponível</button>
+                <button id="optIndisponivel" class="btn">2 — Indisponível</button>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
+              <label style="flex:1 1 45%">Missão
+                <select id="selMissao" class="input">
+                  <option value="">— Selecione —</option>
+                  ${missoes.map(m => `<option>${m}</option>`).join('')}
+                  <option value="__OUTRO__">Outro (digitar)</option>
+                </select>
+                <input id="inpMissao" class="input" style="margin-top:6px;display:none" placeholder="Digite a missão">
+              </label>
+
+              <label style="flex:1 1 25%">Comandante
+                <select id="selCmte" class="input">
+                  <option value="">— Selecione —</option>
+                  ${cmtes.map(m => `<option>${m}</option>`).join('')}
+                  <option value="__OUTRO__">Outro (digitar)</option>
+                </select>
+                <input id="inpCmte" class="input" style="margin-top:6px;display:none" placeholder="Digite o comandante">
+              </label>
+
+              <label style="flex:1 1 25%">Mecânico
+                <select id="selMec" class="input">
+                  <option value="">— Selecione —</option>
+                  ${mecs.map(m => `<option>${m}</option>`).join('')}
+                  <option value="__OUTRO__">Outro (digitar)</option>
+                </select>
+                <input id="inpMec" class="input" style="margin-top:6px;display:none" placeholder="Digite o mecânico">
+              </label>
+            </div>
+
+            <div class="row" style="margin-top:8px;gap:8px;align-items:center">
+              <label style="flex:1 1 50%">Motivo da Indisponibilidade
+                <select id="selMotivo" class="input">
+                  <option value="">— Selecione —</option>
+                  <option value="Programada">Programada</option>
+                  <option value="Discrepância">Discrepância</option>
+                  <option value="Administrativa">Administrativa</option>
+                </select>
+              </label>
+
+              <label style="flex:1 1 50%">Observações
+                <input id="inpObs" class="input" placeholder="Observações (opcional)">
+              </label>
+            </div>
+
+            <div class="actions">
+              <button id="btnCancel" class="btn">Cancelar</button>
+              <button id="btnSave" class="btn primary">Salvar</button>
+            </div>
           </div>
         </div>
-
-        <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
-          <label style="flex:1 1 45%">Missão
-            <select id="selMissao" class="input">
-              <option value="">— Selecione —</option>
-              ${missoes.map(m => `<option>${m}</option>`).join('')}
-              <option value="__OUTRO__">Outro (digitar)</option>
-            </select>
-            <input id="inpMissao" class="input" style="margin-top:6px;display:none" placeholder="Digite a missão">
-          </label>
-
-          <label style="flex:1 1 25%">Comandante
-            <select id="selCmte" class="input">
-              <option value="">— Selecione —</option>
-              ${cmtes.map(m => `<option>${m}</option>`).join('')}
-              <option value="__OUTRO__">Outro (digitar)</option>
-            </select>
-            <input id="inpCmte" class="input" style="margin-top:6px;display:none" placeholder="Digite o comandante">
-          </label>
-
-          <label style="flex:1 1 25%">Mecânico
-            <select id="selMec" class="input">
-              <option value="">— Selecione —</option>
-              ${mecs.map(m => `<option>${m}</option>`).join('')}
-              <option value="__OUTRO__">Outro (digitar)</option>
-            </select>
-            <input id="inpMec" class="input" style="margin-top:6px;display:none" placeholder="Digite o mecânico">
-          </label>
-        </div>
-
-        <div class="row" style="margin-top:8px">
-          <label style="width:100%">Observações
-            <input id="inpObs" class="input" placeholder="Observações (opcional)">
-          </label>
-        </div>
-
-        <div class="actions">
-          <button id="btnCancel" class="btn">Cancelar</button>
-          <button id="btnSave" class="btn primary">Salvar</button>
-        </div>
-      </div>
-    </div>
-  `;
-}
+      `;
+    }
 
     async function showEditModal(prefixo){
-  // garante lookups atualizados (tenta cache LOOKUPS, senão busca)
-  try{
-    if (!LOOKUPS || !LOOKUPS.missoes || LOOKUPS.missoes.length===0){
-      const res = await apiFetch({ fn: 'lookups' });
-      if (res && res.ok && res.data) LOOKUPS = res.data;
+      try{
+        if (!LOOKUPS || !LOOKUPS.missoes || LOOKUPS.missoes.length===0){
+          const res = await apiFetch({ fn: 'lookups' });
+          if (res && res.ok && res.data) LOOKUPS = res.data;
+        }
+      }catch(e){
+        console.warn('Não foi possível carregar lookups:', e);
+      }
+
+      const existing = document.getElementById('modalBackdrop');
+      if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+      const container = document.createElement('div');
+      container.innerHTML = buildModalHtml(prefixo, LOOKUPS);
+      document.body.appendChild(container.firstElementChild);
+
+      const bp = document.getElementById('modalBackdrop');
+      const selMissao = document.getElementById('selMissao');
+      const selCmte   = document.getElementById('selCmte');
+      const selMec    = document.getElementById('selMec');
+      const inpMissao = document.getElementById('inpMissao');
+      const inpCmte   = document.getElementById('inpCmte');
+      const inpMec    = document.getElementById('inpMec');
+      const inpObs    = document.getElementById('inpObs');
+
+      selMissao && selMissao.addEventListener('change', ()=> { inpMissao.style.display = selMissao.value==='__OUTRO__' ? 'block' : 'none'; });
+      selCmte   && selCmte.addEventListener('change', ()=> { inpCmte.style.display   = selCmte.value==='__OUTRO__' ? 'block' : 'none'; });
+      selMec    && selMec.addEventListener('change', ()=> { inpMec.style.display    = selMec.value==='__OUTRO__' ? 'block' : 'none'; });
+
+      // Buttons
+      document.getElementById('btnCancel').addEventListener('click', ()=> { const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b); });
+      document.getElementById('btnSave').addEventListener('click', async ()=>{
+        const sDisp = document.getElementById('optDisponivel').classList.contains('primary');
+        // mapeamento para valores que o backend já trabalha
+        const statusMapped = sDisp ? 'STAND BY' : 'MNT';
+
+        const missao = (selMissao && selMissao.value === '__OUTRO__') ? (inpMissao.value.trim()||'') : (selMissao ? selMissao.value : '');
+        const comandante = (selCmte && selCmte.value === '__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte ? selCmte.value : '');
+        const mecanico = (selMec && selMec.value === '__OUTRO__') ? (inpMec.value.trim()||'') : (selMec ? selMec.value : '');
+        const motivo = (document.getElementById('selMotivo') ? document.getElementById('selMotivo').value : '');
+        const obs = inpObs ? inpObs.value.trim() : '';
+
+        try{
+          await setStatusPrefixo(prefixo, statusMapped, { missao, comandante, mecanico, motivo, obs });
+          const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b);
+          await refreshAll();
+        }catch(err){
+          alert('Erro ao salvar: ' + (err.message||err));
+        }
+      });
+
+      // Quick toggle behaviour
+      const btnDisp = document.getElementById('optDisponivel');
+      const btnInd  = document.getElementById('optIndisponivel');
+      const setActive = (which)=>{
+        if (which==='disp'){ btnDisp.classList.add('primary'); btnInd.classList.remove('primary'); }
+        else { btnInd.classList.add('primary'); btnDisp.classList.remove('primary'); }
+      };
+      btnDisp.addEventListener('click', ()=> setActive('disp'));
+      btnInd.addEventListener('click', ()=> setActive('ind'));
+      setActive('disp');
+
+      // fechar clicando fora
+      bp.addEventListener('click', (ev)=>{ if (ev.target === bp){ if (bp && bp.parentNode) bp.parentNode.removeChild(bp); } });
     }
-  }catch(e){
-    // se falhar, segue com arrays vazios — modal ainda abre
-    console.warn('Não foi possível carregar lookups:', e);
-  }
 
-  // cria modal e anexa ao body (remove modal anterior se existir)
-  const existing = document.getElementById('modalBackdrop');
-  if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
-
-  const container = document.createElement('div');
-  container.innerHTML = buildModalHtml(prefixo, LOOKUPS);
-  document.body.appendChild(container.firstElementChild); // anexa only the backdrop
-
-  // elementos
-  const bp = document.getElementById('modalBackdrop');
-  const selMissao = document.getElementById('selMissao');
-  const selCmte   = document.getElementById('selCmte');
-  const selMec    = document.getElementById('selMec');
-  const inpMissao = document.getElementById('inpMissao');
-  const inpCmte   = document.getElementById('inpCmte');
-  const inpMec    = document.getElementById('inpMec');
-  const inpObs    = document.getElementById('inpObs');
-
-  // toggle "Outro (digitar)"
-  selMissao && selMissao.addEventListener('change', ()=> { inpMissao.style.display = selMissao.value==='__OUTRO__' ? 'block' : 'none'; });
-  selCmte   && selCmte.addEventListener('change', ()=> { inpCmte.style.display   = selCmte.value==='__OUTRO__' ? 'block' : 'none'; });
-  selMec    && selMec.addEventListener('change', ()=> { inpMec.style.display    = selMec.value==='__OUTRO__' ? 'block' : 'none'; });
-
-  // Buttons
-  document.getElementById('btnCancel').addEventListener('click', ()=> { const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b); });
-  document.getElementById('btnSave').addEventListener('click', async ()=>{
-    const sDisp = document.getElementById('optDisponivel').classList.contains('primary');
-    const sInd  = document.getElementById('optIndisponivel').classList.contains('primary');
-    let status = sDisp ? 'DISPONIVEL' : (sInd ? 'INDISPONIVEL' : 'DISPONIVEL');
-
-    const missao = (selMissao && selMissao.value === '__OUTRO__') ? (inpMissao.value.trim()||'') : (selMissao ? selMissao.value : '');
-    const comandante = (selCmte && selCmte.value === '__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte ? selCmte.value : '');
-    const mecanico = (selMec && selMec.value === '__OUTRO__') ? (inpMec.value.trim()||'') : (selMec ? selMec.value : '');
-    const obs = inpObs ? inpObs.value.trim() : '';
-
-    try{
-      await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, obs });
-      const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b);
-      await refreshAll();
-    }catch(err){
-      alert('Erro ao salvar: ' + (err.message||err));
-    }
-  });
-
-  // Quick toggle behaviour
-  const btnDisp = document.getElementById('optDisponivel');
-  const btnInd  = document.getElementById('optIndisponivel');
-  const setActive = (which)=>{
-    if (which==='disp'){ btnDisp.classList.add('primary'); btnInd.classList.remove('primary'); }
-    else { btnInd.classList.add('primary'); btnDisp.classList.remove('primary'); }
-  };
-  btnDisp.addEventListener('click', ()=> setActive('disp'));
-  btnInd.addEventListener('click', ()=> setActive('ind'));
-  setActive('disp');
-
-  // fechar clicando fora
-  bp.addEventListener('click', (ev)=>{ if (ev.target === bp){ if (bp && bp.parentNode) bp.parentNode.removeChild(bp); } });
-}
-
-// === Delegação de clique: garante que prefixos dinâmicos abram modal ===
-document.addEventListener('click', (ev) => {
-  // busca o elemento .prefixo com data-prefixo mais próximo do alvo do clique
-  const el = ev.target.closest('.prefixo[data-prefixo]');
-  if (!el) return;
-  const prefixo = el.getAttribute('data-prefixo') || el.textContent.trim();
-  if (!prefixo) return;
-  showEditModal(prefixo);
-});
+    // Delegação de clique: prefixos abrem modal
+    document.addEventListener('click', (ev) => {
+      const el = ev.target.closest('.prefixo[data-prefixo]');
+      if (!el) return;
+      const prefixo = el.getAttribute('data-prefixo') || el.textContent.trim();
+      if (!prefixo) return;
+      showEditModal(prefixo);
+    });
 
     /* Eventos */
     $('#btnFiltrar').addEventListener('click', refreshAll);
