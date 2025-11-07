@@ -511,18 +511,33 @@
       new google.visualization.PieChart($('#pie_div')).draw(dt, options);
     }
     function drawPareto(rows){
-      const dt = new google.visualization.DataTable();
-      dt.addColumn('string','Motivo'); dt.addColumn('number','Qtde'); dt.addColumn({type:'string', role:'annotation'});
-      rows.forEach(r=> dt.addRow([r.Motivo, Number(r.Qtde||0), String(r.Qtde||0)]));
-      const options = {
-        backgroundColor:'transparent', legend:'none',
-        annotations:{ textStyle:{ color:'#e5e7eb', bold:true }},
-        hAxis:{ textStyle:{ color:'#94a3b8' }, gridlines:{ color:'#1f2937' }, minValue:0 },
-        vAxis:{ textStyle:{ color:'#94a3b8' } },
-        colors:['#ef4444'], chartArea:{ left:120, top:10, right:20, height:260 }, height:360
-      };
-      new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
-    }
+  // rows agora é um array com objetos {Categoria, Qtde}
+  // Garantir ordem: Programada, Discrepância, Administrativa, Sem motivo
+  const order = ['Programada','Discrepância','Administrativa','Sem motivo'];
+  const dt = new google.visualization.DataTable();
+  dt.addColumn('string','Categoria');
+  dt.addColumn('number','Qtde');
+  dt.addColumn({type:'string', role:'annotation'});
+
+  const map = {};
+  (rows||[]).forEach(r => { map[String(r.Categoria||r.Motivo||'Sem motivo')] = Number(r.Qtde||0); });
+
+  order.forEach(k => {
+    dt.addRow([k, map[k] || 0, String(map[k] || 0)]);
+  });
+
+  const options = {
+    backgroundColor:'transparent', legend:'none',
+    annotations:{ alwaysOutside:true, textStyle:{ color:'#e5e7eb', bold:true } },
+    hAxis:{ textStyle:{ color:'#94a3b8' }, gridlines:{ color:'#1f2937' }, minValue:0 },
+    vAxis:{ textStyle:{ color:'#94a3b8' } },
+    colors: ['#22c55e','#ef4444','#f59e0b','#64748b'], // verde, vermelho, amarelo, cinza
+    chartArea:{ left:140, top:10, right:20, height:260 },
+    height:360
+  };
+
+  new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
+}
 
     /* Dashboard loader */
     async function refreshAll(){
