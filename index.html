@@ -96,7 +96,9 @@
       border-radius:16px;       /* opcional: dá um acabamento melhor no recorte */
     }
 
-    
+    /* Indica que o prefixo é clicável */
+    .prefixo[data-prefixo]{ cursor:pointer; text-decoration:none; }
+    .prefixo[data-prefixo]:hover{ text-decoration:underline; }
   </style>
 </head>
 <body>
@@ -170,6 +172,7 @@
 </div>
 
       
+
 
       <!-- ====== BLOCO EXPORTÁVEL ====== -->
       <div id="exportArea">
@@ -305,7 +308,7 @@
 
   <script>
     // ======= CONFIGURAÇÃO =======
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzbQsI5axZUdIvwsaUf42eznLSzevLzQjjkDzCG34ZiKJHoANhnHaeAXXpG8GwUQ0eU/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwGNWh1CxWxT_yA9E23V4j6ossYmOA1Tt2gn58Xp8DhY3vOGMGJjtiWuLZUn6gqiAY/exec';
     // ============================
 
     google.charts.load('current', {'packages':['corechart']});
@@ -409,61 +412,59 @@
       if (S==='MISSÃO' || S==='MISSAO') return '<span class="chip ms">EM MISSÃO</span>';
       if (S==='MNT') return '<span class="chip mt">INDISPONÍVEL</span>';
       return `<span class="chip">${status||'-'}</span>`;
-}
+    }
 
-
-    // Lista de cartões (com horas do mês no cabeçalho)
-    
+    // === Substitui a função renderListaGrouped antiga por esta (inclui data-prefixo) ===
     function renderListaGrouped(rows){
-  const baseSel = $('#progBase').value || '';
-  const norm = s => String(s||'').toLowerCase();
+      const baseSel = $('#progBase').value || '';
+      const norm = s => String(s||'').toLowerCase();
 
-  // agora só 2 grupos
-  const DISP = []; // STAND BY + MISSÃO
-  const IND  = []; // MNT
+      // agora só 2 grupos
+      const DISP = []; // STAND BY + MISSÃO
+      const IND  = []; // MNT
 
-  for (const r of rows){
-    if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
-    const st = String(r.Status||'').toUpperCase();
+      for (const r of rows){
+        if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
+        const st = String(r.Status||'').toUpperCase();
 
-    const horas = getHoras(r.Prefixo);
-    const horasChip = horas > 0
-      ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
-      : '';
+        const horas = getHoras(r.Prefixo);
+        const horasChip = horas > 0
+          ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
+          : '';
 
-    const card = `
-      <div class="card">
-        <div class="title">
-          <div class="prefixo">${r.Prefixo||'-'}</div>
-          <div style="display:flex;gap:8px;align-items:center">
-            ${horasChip}
-            ${chip(r.Status)}
-          </div>
-        </div>
-        <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
-        <div class="meta">
-          <div><b>Missão:</b> ${r.Missao||'-'}</div>
-          <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
-          <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
-          ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
-          ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
-        </div>
-        ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
-      </div>`;
+        // aqui o prefixo ficou com data-prefixo para permitir clique
+        const card = `
+          <div class="card">
+            <div class="title">
+              <div class="prefixo" data-prefixo="${r.Prefixo||''}" title="Clique para alterar o status">${r.Prefixo||'-'}</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                ${horasChip}
+                ${chip(r.Status)}
+              </div>
+            </div>
+            <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
+            <div class="meta">
+              <div><b>Missão:</b> ${r.Missao||'-'}</div>
+              <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
+              <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
+              ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
+              ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
+            </div>
+            ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
+          </div>`;
 
-    if (st==='MNT') IND.push(card);
-    else           DISP.push(card);  // STAND BY e MISSÃO entram aqui
-  }
+        if (st==='MNT') IND.push(card);
+        else           DISP.push(card);  // STAND BY e MISSÃO entram aqui
+      }
 
-  // escreve nas novas listas
-  $('#dispList').innerHTML = DISP.length ? DISP.join('') : `<div class="muted">—</div>`;
-  $('#indList').innerHTML  = IND.length  ? IND.join('')  : `<div class="muted">—</div>`;
+      // escreve nas novas listas
+      $('#dispList').innerHTML = DISP.length ? DISP.join('') : `<div class="muted">—</div>`;
+      $('#indList').innerHTML  = IND.length  ? IND.join('')  : `<div class="muted">—</div>`;
 
-  // contadores
-  $('#cntDISP').textContent = `(${DISP.length})`;
-  $('#cntIND').textContent  = `(${IND.length})`;
-}
-
+      // contadores
+      $('#cntDISP').textContent = `(${DISP.length})`;
+      $('#cntIND').textContent  = `(${IND.length})`;
+    }
 
     /* Charts */
     function drawColumns(rows, isMonthly){
@@ -584,8 +585,6 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
   minimumFractionDigits:1, maximumFractionDigits:1
 });
 
-
-
       google.charts.setOnLoadCallback(()=> {
         drawPie(data.pie, date);
         drawColumns(data.series, range==='12m');
@@ -593,6 +592,57 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
       });
     }
     const refreshPareto = debounce(refreshAll, 150);
+
+    /* ===== Funções para alterar status via API (setstatus) ===== */
+    async function setStatusPrefixo(prefixo, status, extras={}){
+      const params = {
+        fn: 'setstatus',
+        prefixo,
+        status,
+        ...extras
+      };
+      const r = await apiFetch(params);
+      if (!r || !r.ok) throw new Error((r && r.error) || 'Falha ao salvar');
+      return r.data;
+    }
+
+    // Clique no PREFIXO para alterar o status do dia (STAND BY / MISSÃO / MNT)
+    document.addEventListener('click', async (ev) => {
+      const el = ev.target.closest('[data-prefixo]');
+      if (!el) return;
+
+      const prefixo = el.getAttribute('data-prefixo');
+      if (!prefixo) return;
+
+      // Prompt simples (pode trocar por modal depois)
+      const entrada = prompt(
+        `Novo status para ${prefixo}:\n` +
+        `Digite 1 = STAND BY\n` +
+        `Digite 2 = MISSÃO\n` +
+        `Digite 3 = MNT\n` +
+        `Ou digite exatamente: STAND BY, MISSÃO ou MNT`
+      );
+      if (!entrada) return;
+
+      let status = String(entrada).trim().toUpperCase();
+      if (status === '1') status = 'STAND BY';
+      else if (status === '2') status = 'MISSÃO';
+      else if (status === '3') status = 'MNT';
+
+      if (!['STAND BY','MISSÃO','MNT','MISSAO'].includes(status)) {
+        alert('Valor inválido. Use 1, 2, 3 ou escreva STAND BY / MISSÃO / MNT.');
+        return;
+      }
+
+      try{
+        await setStatusPrefixo(prefixo, status);
+        // atualiza tela
+        await refreshAll();
+      }catch(err){
+        console.error(err);
+        alert('Não foi possível salvar o status: ' + err.message);
+      }
+    });
 
     /* Eventos */
     $('#btnFiltrar').addEventListener('click', refreshAll);
