@@ -65,7 +65,7 @@
     .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
     .prefixo{font-weight:800;font-size:18px}
     .chip{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--chip);border:1px solid var(--border)}
-    .chip.sb{color:#34d399}.chip.ms{color:#60a5f a}.chip.mt{color:#f87171}
+    .chip.sb{color:#34d399}.chip.ms{color:#60a5fa}.chip.mt{color:#f87171}
     .chip.hr{background:rgba(34,197,94,.12); color:#34d399}
     .muted{color:var(--muted);font-size:12px}
     .meta{display:flex;gap:10px;flex-wrap:wrap;color:#cbd5e1;font-size:13px;margin-top:8px}
@@ -100,16 +100,14 @@
     .prefixo[data-prefixo]{ cursor:pointer; text-decoration:none; }
     .prefixo[data-prefixo]:hover{ text-decoration:underline; }
 
-    /* Modal simples (vertical inputs) */
+    /* Modal simples */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:2000; }
     .modal{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; width:520px; max-width:95%; color:var(--text); }
     .modal h3{ margin:0 0 8px 0; font-size:16px }
     .modal .row{ margin:8px 0; flex-direction:column; align-items:flex-start; gap:8px }
-    .modal label{ width:100%; display:flex; flex-direction:column; gap:6px }
+    .modal label{ width:100%; }
     .modal .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px }
     .small{ font-size:13px; color:var(--muted) }
-
-    .select{ height:40px; padding:0 12px; border-radius:8px; background:#0b1220; border:1px solid var(--border); color:var(--text) }
   </style>
 </head>
 <body>
@@ -313,13 +311,12 @@
     </div>
   </div>
 
-  <!-- Modal container (será preenchido dinamicamente) -->
+  <!-- Modal (inserido no DOM via HTML estático e controlado por JS) -->
   <div id="editModal" style="display:none"></div>
 
   <script>
     // ======= CONFIGURAÇÃO =======
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzbQsI5axZUdIvwsaUf42eznLSzevLzQjjkDzCG34ZiKJHoANhnHaeAXXpG8GwUQ0eU/exec';
-    // substitua acima pelo seu URL de implantação correto
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwGNWh1CxWxT_yA9E23V4j6ossYmOA1Tt2gn58Xp8DhY3vOGMGJjtiWuLZUn6gqiAY/exec';
     // ============================
 
     google.charts.load('current', {'packages':['corechart']});
@@ -341,6 +338,9 @@
       const qp = new URLSearchParams(params);
       const t = getToken();
       if (t) qp.set('t', t);
+
+      // cache-buster para evitar respostas em cache do Apps Script
+      qp.set('_cb', String(Date.now()));
 
       const url = API_URL + '?' + qp.toString();
       let text;
@@ -422,9 +422,9 @@
 
     function chip(status){
       const S = String(status||'').toUpperCase();
-      if (S==='STAND BY' || S==='DISPONIVEL') return '<span class="chip sb">DISPONÍVEL</span>';
+      if (S==='STAND BY') return '<span class="chip sb">DISPONÍVEL</span>';
       if (S==='MISSÃO' || S==='MISSAO') return '<span class="chip ms">EM MISSÃO</span>';
-      if (S==='MNT' || S==='INDISPONIVEL') return '<span class="chip mt">INDISPONÍVEL</span>';
+      if (S==='MNT') return '<span class="chip mt">INDISPONÍVEL</span>';
       return `<span class="chip">${status||'-'}</span>`;
     }
 
@@ -466,7 +466,7 @@
         ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
       </div>`;
 
-    if (st==='MNT' || st==='INDISPONIVEL') IND.push(card);
+    if (st==='MNT') IND.push(card);
     else           DISP.push(card);
   }
 
@@ -608,21 +608,24 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
 
     /* ===== Funções para alterar status via API (setstatus) ===== */
     async function setStatusPrefixo(prefixo, status, extras={}){
-      // extras: missao, comandante, mecanico, obs, motivo_categoria
-      const qp = { fn:'setstatus', prefixo, status,
-                   missao: extras.missao || '', comandante: extras.comandante || '',
-                   mecanico: extras.mecanico || '', obs: extras.obs || '', motivo_categoria: extras.motivo_categoria || '' };
-      const t = getToken();
-      if (t) qp.t = t;
-      const url = API_URL + '?' + new URLSearchParams(qp).toString();
-      const res = await fetch(url, { cache: 'no-store' });
-      const text = await res.text();
-      const json = JSON.parse(text);
-      if (!json || !json.ok) throw new Error((json && json.error) ? json.error : 'Falha setstatus');
-      return json.data;
+      const params = {
+        fn: 'setstatus',
+        prefixo,
+        status,
+        missao: extras.missao || '',
+        comandante: extras.comandante || '',
+        mecanico: extras.mecanico || '',
+        obs: extras.obs || '',
+        date: extras.date || $('#fData').value || '',
+        previsao: extras.previsao || '',
+        motivo_tipo: extras.motivo_tipo || ''
+      };
+      const r = await apiFetch(params);
+      if (!r || !r.ok) throw new Error((r && r.error) || 'Falha ao salvar');
+      return r.data;
     }
 
-    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC ===== */
+    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC + tipo de indisponibilidade ===== */
     function buildModalHtml(prefixo, lookups){
   // fallback arrays seguros
   const missoes = (lookups && lookups.missoes) ? lookups.missoes : [];
@@ -641,9 +644,9 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
           </div>
         </div>
 
-        <div class="row" style="margin-top:10px;gap:8px;flex-direction:column">
-          <label>Missão
-            <select id="selMissao" class="select">
+        <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">
+          <label style="flex:1 1 45%">Missão
+            <select id="selMissao" class="input">
               <option value="">— Selecione —</option>
               ${missoes.map(m => `<option>${m}</option>`).join('')}
               <option value="__OUTRO__">Outro (digitar)</option>
@@ -651,8 +654,8 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
             <input id="inpMissao" class="input" style="margin-top:6px;display:none" placeholder="Digite a missão">
           </label>
 
-          <label>Comandante
-            <select id="selCmte" class="select">
+          <label style="flex:1 1 25%">Comandante
+            <select id="selCmte" class="input">
               <option value="">— Selecione —</option>
               ${cmtes.map(m => `<option>${m}</option>`).join('')}
               <option value="__OUTRO__">Outro (digitar)</option>
@@ -660,25 +663,29 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
             <input id="inpCmte" class="input" style="margin-top:6px;display:none" placeholder="Digite o comandante">
           </label>
 
-          <label>Mecânico
-            <select id="selMec" class="select">
+          <label style="flex:1 1 25%">Mecânico
+            <select id="selMec" class="input">
               <option value="">— Selecione —</option>
               ${mecs.map(m => `<option>${m}</option>`).join('')}
               <option value="__OUTRO__">Outro (digitar)</option>
             </select>
             <input id="inpMec" class="input" style="margin-top:6px;display:none" placeholder="Digite o mecânico">
           </label>
+        </div>
 
-          <label>Motivo (categoria)
-            <select id="selMotivoCat" class="select">
-              <option value="">— Categoria —</option>
+        <div class="row" style="margin-top:8px">
+          <label style="width:100%">Tipo de indisponibilidade (se aplicável)
+            <select id="selMotivoTipo" class="input">
+              <option value="">— Nenhum —</option>
               <option value="Programada">Programada</option>
               <option value="Discrepância">Discrepância</option>
               <option value="Administrativa">Administrativa</option>
             </select>
           </label>
+        </div>
 
-          <label>Observações
+        <div class="row" style="margin-top:8px">
+          <label style="width:100%">Observações
             <input id="inpObs" class="input" placeholder="Observações (opcional)">
           </label>
         </div>
@@ -700,10 +707,11 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
       if (res && res.ok && res.data) LOOKUPS = res.data;
     }
   }catch(e){
+    // se falhar, segue com arrays vazios — modal ainda abre
     console.warn('Não foi possível carregar lookups:', e);
   }
 
-  // remove modal anterior
+  // cria modal e anexa ao body (remove modal anterior se existir)
   const existing = document.getElementById('modalBackdrop');
   if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
 
@@ -720,7 +728,7 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
   const inpCmte   = document.getElementById('inpCmte');
   const inpMec    = document.getElementById('inpMec');
   const inpObs    = document.getElementById('inpObs');
-  const selMotivo = document.getElementById('selMotivoCat');
+  const selMotivoTipo = document.getElementById('selMotivoTipo');
 
   // toggle "Outro (digitar)"
   selMissao && selMissao.addEventListener('change', ()=> { inpMissao.style.display = selMissao.value==='__OUTRO__' ? 'block' : 'none'; });
@@ -730,10 +738,6 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
   // Buttons
   document.getElementById('btnCancel').addEventListener('click', ()=> { const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b); });
   document.getElementById('btnSave').addEventListener('click', async ()=>{
-    // desabilita botão p/ evitar duplo clique
-    const btnSave = document.getElementById('btnSave');
-    btnSave.disabled = true;
-
     const sDisp = document.getElementById('optDisponivel').classList.contains('primary');
     const sInd  = document.getElementById('optIndisponivel').classList.contains('primary');
     let status = sDisp ? 'DISPONIVEL' : (sInd ? 'INDISPONIVEL' : 'DISPONIVEL');
@@ -742,18 +746,14 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
     const comandante = (selCmte && selCmte.value === '__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte ? selCmte.value : '');
     const mecanico = (selMec && selMec.value === '__OUTRO__') ? (inpMec.value.trim()||'') : (selMec ? selMec.value : '');
     const obs = inpObs ? inpObs.value.trim() : '';
-    const motivo_categoria = selMotivo ? selMotivo.value || '' : '';
+    const motivo_tipo = selMotivoTipo ? selMotivoTipo.value : '';
 
     try{
-      // chama API para setstatus
-      await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, obs, motivo_categoria });
+      await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, obs, motivo_tipo });
       const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b);
-      // atualiza UI: refreshAll para garantir consistência; você pode otimizar para atualizar só 1 card
       await refreshAll();
     }catch(err){
       alert('Erro ao salvar: ' + (err.message||err));
-    }finally{
-      btnSave.disabled = false;
     }
   });
 
@@ -774,6 +774,7 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
 
 // === Delegação de clique: garante que prefixos dinâmicos abram modal ===
 document.addEventListener('click', (ev) => {
+  // busca o elemento .prefixo com data-prefixo mais próximo do alvo do clique
   const el = ev.target.closest('.prefixo[data-prefixo]');
   if (!el) return;
   const prefixo = el.getAttribute('data-prefixo') || el.textContent.trim();
