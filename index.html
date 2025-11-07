@@ -73,7 +73,7 @@
   <div id="editModal" style="display:none"></div>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/SEU_WEBAPP_ID/exec'; // substitua
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwGNWh1CxWxT_yA9E23V4j6ossYmOA1Tt2gn58Xp8DhY3vOGMGJjtiWuLZUn6gqiAY/exec'; // substitua
     const $ = s => document.querySelector(s);
     const debounce = (fn,ms=300)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); } };
     const TOK_KEY='dash_t'; function getToken(){ return localStorage.getItem(TOK_KEY)||'' } function setToken(t){ if(t) localStorage.setItem(TOK_KEY,t); else localStorage.removeItem(TOK_KEY); }
