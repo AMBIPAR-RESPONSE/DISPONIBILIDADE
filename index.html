@@ -99,6 +99,15 @@
     /* Indica que o prefixo é clicável */
     .prefixo[data-prefixo]{ cursor:pointer; text-decoration:none; }
     .prefixo[data-prefixo]:hover{ text-decoration:underline; }
+
+    /* Modal simples */
+    .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:2000; }
+    .modal{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; width:520px; max-width:95%; color:var(--text); }
+    .modal h3{ margin:0 0 8px 0; font-size:16px }
+    .modal .row{ margin:8px 0; flex-direction:column; align-items:flex-start; gap:8px }
+    .modal label{ width:100%; }
+    .modal .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px }
+    .small{ font-size:13px; color:var(--muted) }
   </style>
 </head>
 <body>
@@ -140,9 +149,8 @@
           <label>Status
             <select id="fStatus">
               <option value="">Todos</option>
-              <option value="STAND BY">STAND BY</option>
-              <option value="MISSÃO">MISSÃO</option>
-              <option value="MNT">MNT</option>
+              <option value="STAND BY">Disponível</option>
+              <option value="MNT">Indisponível</option>
             </select>
           </label>
           <label>Buscar <input class="input" id="fBusca" placeholder="Prefixo, CMTE, Mecânico..."></label>
@@ -189,7 +197,7 @@
   </div>
 </div>
 
-<!-- FAIXA: DISPONÍVEL (STAND BY + EM MISSÃO) -->
+<!-- FAIXA: DISPONÍVEL (DISPONÍVEL) -->
 <div class="hgroup">
   <div class="hline">
     <span class="hlabel">DISPONÍVEL <span class="muted" id="cntDISP">(0)</span></span>
@@ -306,9 +314,12 @@
     </div>
   </div>
 
+  <!-- Modal (inserido no DOM via HTML estático e controlado por JS) -->
+  <div id="editModal" style="display:none"></div>
+
   <script>
     // ======= CONFIGURAÇÃO =======
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwGNWh1CxWxT_yA9E23V4j6ossYmOA1Tt2gn58Xp8DhY3vOGMGJjtiWuLZUn6gqiAY/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzbQsI5axZUdIvwsaUf42eznLSzevLzQjjkDzCG34ZiKJHoANhnHaeAXXpG8GwUQ0eU/exec';
     // ============================
 
     google.charts.load('current', {'packages':['corechart']});
@@ -321,6 +332,9 @@
     // Horas do mês por aeronave (preenchido em refreshAll)
     let HORAS_MAP = {};
     const getHoras = (pref) => Number(HORAS_MAP[String(pref||'').trim()] || 0);
+
+    // Últimos lookups recebidos (bases, prefixos, missoes, comandantes, mecanicos)
+    let LOOKUPS = { bases:[], prefixos:[], missoes:[], comandantes:[], copilotos:[], mecanicos:[] };
 
     // fetch com proteção contra HTML de erro da implantação
     async function apiFetch(params){
@@ -420,8 +434,8 @@
       const norm = s => String(s||'').toLowerCase();
 
       // agora só 2 grupos
-      const DISP = []; // STAND BY + MISSÃO
-      const IND  = []; // MNT
+      const DISP = []; // Disponível
+      const IND  = []; // Indisponível (MNT)
 
       for (const r of rows){
         if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
@@ -454,7 +468,7 @@
           </div>`;
 
         if (st==='MNT') IND.push(card);
-        else           DISP.push(card);  // STAND BY e MISSÃO entram aqui
+        else           DISP.push(card);  // STAND BY e MISSÃO eram "disponíveis" - mantemos como DISPONÍVEL
       }
 
       // escreve nas novas listas
@@ -547,6 +561,9 @@
       const res = await apiFetch(qs);
       const data = res.data;
 
+      // atualiza LOOKUPS globais
+      LOOKUPS = data.lookups || LOOKUPS;
+
       if ($('#baseChart').options.length<=1){
         const basesOpt   = '<option value="">Todas</option>' + data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
         const prefOpt    = '<option value="">Todas</option>' + data.lookups.prefixos.map(v=>`<option>${v}</option>`).join('');
@@ -606,42 +623,131 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
       return r.data;
     }
 
-    // Clique no PREFIXO para alterar o status do dia (STAND BY / MISSÃO / MNT)
-    document.addEventListener('click', async (ev) => {
+    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC ===== */
+    function buildModalHtml(prefixo){
+      return `
+        <div class="modal-backdrop" id="modalBackdrop">
+          <div class="modal" role="dialog" aria-modal="true">
+            <h3>Editar status — ${prefixo}</h3>
+            <div class="row">
+              <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <button id="optDisponivel" class="btn primary">1 — Disponível</button>
+                <button id="optIndisponivel" class="btn">2 — Indisponível</button>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px">
+              <label>Missão
+                <select id="selMissao" class="input">
+                  <option value="">— Selecione —</option>
+                  ${LOOKUPS.missoes.map(m => `<option>${m}</option>`).join('')}
+                  <option value="__OUTRO__">Outro (digitar)</option>
+                </select>
+                <input id="inpMissao" class="input" style="margin-top:6px;display:none" placeholder="Digite a missão">
+              </label>
+
+              <label>Comandante
+                <select id="selCmte" class="input">
+                  <option value="">— Selecione —</option>
+                  ${LOOKUPS.comandantes.map(m => `<option>${m}</option>`).join('')}
+                  <option value="__OUTRO__">Outro (digitar)</option>
+                </select>
+                <input id="inpCmte" class="input" style="margin-top:6px;display:none" placeholder="Digite o comandante">
+              </label>
+
+              <label>Mecânico
+                <select id="selMec" class="input">
+                  <option value="">— Selecione —</option>
+                  ${LOOKUPS.mecanicos.map(m => `<option>${m}</option>`).join('')}
+                  <option value="__OUTRO__">Outro (digitar)</option>
+                </select>
+                <input id="inpMec" class="input" style="margin-top:6px;display:none" placeholder="Digite o mecânico">
+              </label>
+            </div>
+
+            <div class="row" style="margin-top:8px">
+              <label>Observações
+                <input id="inpObs" class="input" placeholder="Observações (opcional)">
+              </label>
+            </div>
+
+            <div class="actions">
+              <button id="btnCancel" class="btn">Cancelar</button>
+              <button id="btnSave" class="btn primary">Salvar</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function showEditModal(prefixo){
+      const wrapper = document.getElementById('editModal');
+      wrapper.innerHTML = buildModalHtml(prefixo);
+      wrapper.style.display = 'block';
+
+      // elementos
+      const bp = document.getElementById('modalBackdrop');
+      const selMissao = document.getElementById('selMissao');
+      const selCmte   = document.getElementById('selCmte');
+      const selMec    = document.getElementById('selMec');
+      const inpMissao = document.getElementById('inpMissao');
+      const inpCmte   = document.getElementById('inpCmte');
+      const inpMec    = document.getElementById('inpMec');
+      const inpObs    = document.getElementById('inpObs');
+
+      // toggle "Outro (digitar)"
+      selMissao.addEventListener('change', ()=> { if (selMissao.value==='__OUTRO__') inpMissao.style.display='block'; else inpMissao.style.display='none'; });
+      selCmte.addEventListener('change', ()=> { if (selCmte.value==='__OUTRO__') inpCmte.style.display='block'; else inpCmte.style.display='none'; });
+      selMec.addEventListener('change', ()=> { if (selMec.value==='__OUTRO__') inpMec.style.display='block'; else inpMec.style.display='none'; });
+
+      // Buttons
+      document.getElementById('btnCancel').addEventListener('click', ()=> { wrapper.innerHTML=''; wrapper.style.display='none'; });
+      document.getElementById('btnSave').addEventListener('click', async ()=>{
+        // Determine selected status: prefer last clicked (optDisponivel/optIndisponivel)
+        const sDisp = document.getElementById('optDisponivel').classList.contains('primary');
+        const sInd  = document.getElementById('optIndisponivel').classList.contains('primary');
+        let status = sDisp ? 'DISPONIVEL' : (sInd ? 'INDISPONIVEL' : 'DISPONIVEL');
+
+        // gather fields (if select==__OUTRO__ use input value)
+        const missao = (selMissao.value === '__OUTRO__') ? (inpMissao.value.trim()||'') : (selMissao.value||'');
+        const comandante = (selCmte.value === '__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte.value||'');
+        const mecanico = (selMec.value === '__OUTRO__') ? (inpMec.value.trim()||'') : (selMec.value||'');
+        const obs = inpObs.value.trim() || '';
+
+        try{
+          await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, obs });
+          wrapper.innerHTML=''; wrapper.style.display='none';
+          await refreshAll();
+        }catch(err){
+          alert('Erro ao salvar: ' + (err.message||err));
+        }
+      });
+
+      // Quick toggle behaviour: make clicked button primary and the other default
+      const btnDisp = document.getElementById('optDisponivel');
+      const btnInd  = document.getElementById('optIndisponivel');
+      const setActive = (which)=>{
+        if (which==='disp'){ btnDisp.classList.add('primary'); btnInd.classList.remove('primary'); }
+        else { btnInd.classList.add('primary'); btnDisp.classList.remove('primary'); }
+      };
+      btnDisp.addEventListener('click', ()=> setActive('disp'));
+      btnInd.addEventListener('click', ()=> setActive('ind'));
+      // default: Disponível
+      setActive('disp');
+
+      // clicking outside modal closes
+      bp.addEventListener('click', (ev)=>{ if (ev.target === bp){ wrapper.innerHTML=''; wrapper.style.display='none'; } });
+
+    }
+
+    /* Evento: clique no PREFIXO abre o modal */
+    document.addEventListener('click', (ev) => {
       const el = ev.target.closest('[data-prefixo]');
       if (!el) return;
-
       const prefixo = el.getAttribute('data-prefixo');
       if (!prefixo) return;
-
-      // Prompt simples (pode trocar por modal depois)
-      const entrada = prompt(
-        `Novo status para ${prefixo}:\n` +
-        `Digite 1 = STAND BY\n` +
-        `Digite 2 = MISSÃO\n` +
-        `Digite 3 = MNT\n` +
-        `Ou digite exatamente: STAND BY, MISSÃO ou MNT`
-      );
-      if (!entrada) return;
-
-      let status = String(entrada).trim().toUpperCase();
-      if (status === '1') status = 'STAND BY';
-      else if (status === '2') status = 'MISSÃO';
-      else if (status === '3') status = 'MNT';
-
-      if (!['STAND BY','MISSÃO','MNT','MISSAO'].includes(status)) {
-        alert('Valor inválido. Use 1, 2, 3 ou escreva STAND BY / MISSÃO / MNT.');
-        return;
-      }
-
-      try{
-        await setStatusPrefixo(prefixo, status);
-        // atualiza tela
-        await refreshAll();
-      }catch(err){
-        console.error(err);
-        alert('Não foi possível salvar o status: ' + err.message);
-      }
+      showEditModal(prefixo);
     });
 
     /* Eventos */
@@ -723,7 +829,7 @@ async function downloadPDF(){
 // liga o botão (uma vez só)
 const btnDl = document.getElementById('btnDownload');
 if (btnDl) btnDl.onclick = downloadPDF;
-</script>
+  </script>
 
 </body>
 </html>
