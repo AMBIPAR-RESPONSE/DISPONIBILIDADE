@@ -1,53 +1,81 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Disponibilidade da Frota</title>
+
+  <!-- Fontes & Ícones -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet" />
+
+  <!-- Google Charts (se usa) -->
   <script src="https://www.gstatic.com/charts/loader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
   <style>
-    /* seu CSS (mantive exatamente o estilo anterior) */
-    :root{ --bg:#0b1320; --card:#111827; --muted:#94a3b8; --text:#e5e7eb; --border:#1f2937; --brand:#22c55e; --chip:#0f172a; }
-    *{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    :root{
+      --bg:#0b1320; --card:#0f1724; --muted:#94a3b8; --text:#e5e7eb; --border:#1f2937;
+      --brand:#22c55e; --danger:#ef4444; --chip:#0f172a;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
     .wrap{max-width:1200px;margin:0 auto;padding:20px}
-    .topbar{position:sticky;top:0;background:rgba(11,19,32,.9);border-bottom:1px solid var(--border)}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:800}
+
+    .topbar{position:sticky;top:0;background:rgba(11,19,32,.95);border-bottom:1px solid var(--border);z-index:20}
+    .topbar .row{display:flex;align-items:center;gap:16px;padding:12px 20px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
     .spacer{flex:1}
     .btn{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:#fff;display:flex;align-items:center;gap:8px;cursor:pointer}
     .btn.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
-    .input, select{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:#e5e7eb}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;min-width:260px;max-width:360px;flex:1 1 260px}
-    .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-    .prefixo{font-weight:800;font-size:18px;cursor:pointer}
-    .chip{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--chip);border:1px solid var(--border)}
-    .chip.sb{color:#34d399}.chip.mt{color:#f87171}.chip.ms{color:#60a5fa}
+
+    .filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-top:14px}
+    .input, select, button{height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--border);background:#0b1220;color:#e5e7eb}
+    label{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:12px}
+
+    .kpis{display:flex;gap:14px;margin-top:16px}
+    .kpi{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px}
+    .kpi .val{font-size:20px;font-weight:800}
+
+    .hgroup{margin-top:18px}
+    .hlabel{font-weight:800;color:#cbd5e1;margin-bottom:8px}
+    .hlist{display:flex;flex-wrap:wrap;gap:12px}
+
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;min-width:240px;max-width:320px;flex:1 1 240px}
+    .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .prefixo{font-weight:800;font-size:16px;cursor:pointer}
+    .chip{padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;background:var(--chip);border:1px solid var(--border)}
+    .chip.sb{color:#34d399}.chip.ms{color:#60a5fa}.chip.mt{color:#f87171}
     .muted{color:var(--muted);font-size:12px}
-    .meta{display:flex;gap:10px;flex-wrap:wrap;color:#cbd5e1;font-size:13px;margin-top:8px}
+    .meta{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:13px;margin-top:8px}
+
+    /* Modal */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:2000; }
     .modal{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; width:520px; max-width:95%; color:var(--text); }
     .modal h3{ margin:0 0 8px 0; font-size:16px }
+    .modal .row{ margin:8px 0; }
+    .modal label{ display:block; margin-bottom:8px; }
+    .modal .input, .modal select{ width:100%; box-sizing:border-box; margin-top:6px; }
+    .modal .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px }
+
     .small{ font-size:13px; color:var(--muted) }
   </style>
 </head>
 <body>
   <div class="topbar">
-    <div class="wrap" style="display:flex;align-items:center;gap:12px">
-      <div class="brand"><span style="width:10px;height:10px;border-radius:50%;background:var(--brand);display:inline-block;margin-right:8px;"></span>Disponibilidade da Frota</div>
+    <div class="row">
+      <div class="brand"><span style="width:10px;height:10px;border-radius:50%;background:var(--brand);display:inline-block;"></span> Disponibilidade da Frota</div>
       <div class="spacer"></div>
       <div>
-        <button id="btnDownload" class="btn"><span class="material-symbols-rounded">download</span></button>
-        <button id="btnRefresh" class="btn"><span class="material-symbols-rounded">refresh</span></button>
+        <button id="btnRefresh" class="btn" title="Atualizar">Atualizar</button>
       </div>
     </div>
   </div>
 
-  <div class="wrap" id="exportArea">
-    <div style="margin-top:18px">
-      <label>Data <input id="fData" class="input" type="date" /></label>
+  <div class="wrap">
+    <div class="filters">
+      <label>Data
+        <input id="fData" class="input" type="date">
+      </label>
       <label>Status
         <select id="fStatus" class="input">
           <option value="">Todos</option>
@@ -55,39 +83,69 @@
           <option value="MNT">Indisponível</option>
         </select>
       </label>
-      <label>Buscar <input id="fBusca" class="input" placeholder="Prefixo, CMTE, Mecânico..." /></label>
-      <button id="btnFiltrar" class="btn primary">Aplicar</button>
+      <label>Buscar
+        <input id="fBusca" class="input" placeholder="Prefixo, CMTE, Mecânico...">
+      </label>
+      <div style="display:flex;align-items:center">
+        <button id="btnFiltrar" class="btn primary">Aplicar</button>
+      </div>
     </div>
 
-    <div style="margin-top:24px">
-      <h3>DISPONÍVEL <span id="cntDISP" class="muted">(0)</span></h3>
-      <div id="dispList" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+    <div class="kpis">
+      <div class="kpi"><div><h4 style="margin:0">Disponíveis</h4><div id="kDisp" class="val">—</div></div></div>
+      <div class="kpi"><div><h4 style="margin:0">Indisponíveis</h4><div id="kInd" class="val">—</div></div></div>
+      <div class="kpi"><div><h4 style="margin:0">Horas no mês</h4><div id="kHoras" class="val">—</div></div></div>
     </div>
 
-    <div style="margin-top:20px">
-      <h3>INDISPONÍVEL <span id="cntIND" class="muted">(0)</span></h3>
-      <div id="indList" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+    <div class="hgroup">
+      <div class="hlabel">DISPONÍVEL <span id="cntDISP" class="muted">(0)</span></div>
+      <div id="dispList" class="hlist"></div>
+    </div>
+
+    <div class="hgroup">
+      <div class="hlabel">INDISPONÍVEL <span id="cntIND" class="muted">(0)</span></div>
+      <div id="indList" class="hlist"></div>
     </div>
   </div>
 
+  <!-- Modal container -->
   <div id="editModal" style="display:none"></div>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwGNWh1CxWxT_yA9E23V4j6ossYmOA1Tt2gn58Xp8DhY3vOGMGJjtiWuLZUn6gqiAY/exec'; // substitua
+    // ================= CONFIG =================
+    const API_URL = 'https://script.google.com/macros/s/SEU_WEBAPP_ID/exec'; // <-- substitua pela sua URL
+    // ==========================================
+
     const $ = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
     const debounce = (fn,ms=300)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); } };
-    const TOK_KEY='dash_t'; function getToken(){ return localStorage.getItem(TOK_KEY)||'' } function setToken(t){ if(t) localStorage.setItem(TOK_KEY,t); else localStorage.removeItem(TOK_KEY); }
+
+    // token handling (se usa login)
+    const TOK_KEY='dash_t';
+    function getToken(){ return localStorage.getItem(TOK_KEY)||''; }
+    function setToken(t){ if(t) localStorage.setItem(TOK_KEY,t); else localStorage.removeItem(TOK_KEY); }
+
+    let LOOKUPS = { bases:[], prefixos:[], missoes:[], comandantes:[], copilotos:[], mecanicos:[] };
+    let HORAS_MAP = {};
 
     async function apiFetch(params){
       const qp = new URLSearchParams(params||{});
-      const t = getToken(); if (t) qp.set('t', t);
+      const t = getToken();
+      if (t) qp.set('t', t);
       const url = API_URL + '?' + qp.toString();
-      const res = await fetch(url, { cache:'no-store' });
-      const text = await res.text();
-      try{ return JSON.parse(text); } catch(e){ throw new Error('API não retornou JSON: '+ text.slice(0,200)); }
+      let text;
+      try{
+        const res = await fetch(url, { cache:'no-store' });
+        text = await res.text();
+      }catch(e){
+        throw new Error('Falha de rede ao acessar a API: ' + e.message);
+      }
+      let json;
+      try{ json = JSON.parse(text); }catch(e){ throw new Error('A API não retornou JSON. Resposta: ' + text.slice(0,200)); }
+      if (json && json.error === 'UNAUTHORIZED'){ setToken(''); throw new Error('UNAUTHORIZED'); }
+      return json;
     }
 
-    // renderização dos cards (mantive markup similar ao seu)
     function chip(status){
       const S = String(status||'').toUpperCase();
       if (S==='STAND BY' || S==='DISPONIVEL') return '<span class="chip sb">DISPONÍVEL</span>';
@@ -100,10 +158,10 @@
       const DISP=[]; const IND=[];
       for (const r of rows){
         const st = String(r.Status||'').toUpperCase();
-        const card = `
-          <div class="card">
+        const cardHtml = `
+          <div class="card" data-prefixo="${r.Prefixo||''}">
             <div class="title">
-              <div class="prefixo" data-prefixo="${r.Prefixo||''}" title="Clique para alterar o status">${r.Prefixo||'-'}</div>
+              <div class="prefixo" data-prefixo="${r.Prefixo||''}">${r.Prefixo||'-'}</div>
               <div>${chip(r.Status)}</div>
             </div>
             <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
@@ -115,67 +173,122 @@
               ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ''}
             </div>
           </div>`;
-        if (st==='MNT' || st==='INDISPONIVEL') IND.push(card); else DISP.push(card);
+        if (st==='MNT' || st==='INDISPONIVEL') IND.push(cardHtml); else DISP.push(cardHtml);
       }
-      $('#dispList').innerHTML = DISP.length ? DISP.join('') : '<div class="muted">—</div>';
-      $('#indList').innerHTML  = IND.length  ? IND.join('')  : '<div class="muted">—</div>';
-      $('#cntDISP').textContent = `(${DISP.length})`; $('#cntIND').textContent = `(${IND.length})`;
+      $('#dispList').innerHTML = DISP.length ? DISP.join('') : `<div class="muted">—</div>`;
+      $('#indList').innerHTML  = IND.length  ? IND.join('')  : `<div class="muted">—</div>`;
+      $('#cntDISP').textContent = `(${DISP.length})`;
+      $('#cntIND').textContent  = `(${IND.length})`;
     }
 
     async function refreshAll(){
       const date = $('#fData').value || '';
       const status = $('#fStatus').value || '';
       const search = $('#fBusca').value || '';
-      const res = await apiFetch({ fn:'dashboard', date, status, search });
-      if (!res || !res.ok) { console.error('Erro dashboard', res); return; }
-      const data = res.data;
-      renderListaGrouped(data.list || []);
+      try{
+        const res = await apiFetch({ fn:'dashboard', date, status, search });
+        if (!res || !res.ok) { console.error('Erro dashboard', res); return; }
+        const data = res.data || {};
+        LOOKUPS = data.lookups || LOOKUPS;
+        // update UI lists
+        renderListaGrouped(data.list || []);
+        // KPIs
+        $('#kDisp').textContent = (data.kpis && data.kpis.disponiveis) || '0';
+        $('#kInd').textContent  = (data.kpis && data.kpis.manutencao) || '0';
+        // horas
+        try{
+          const h = await apiFetch({ fn:'horas', date });
+          let totalHoras = 0;
+          if (h && h.ok && h.data){
+            HORAS_MAP = {};
+            if (Array.isArray(h.data.rows)) h.data.rows.forEach(r => HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0));
+            totalHoras = Number(h.data.total || 0) || Object.values(HORAS_MAP).reduce((s,v)=>s+(Number(v)||0),0);
+          }
+          $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{ minimumFractionDigits:1, maximumFractionDigits:1 });
+        }catch(e){ $('#kHoras').textContent = '0.0'; }
+      }catch(err){
+        console.error(err);
+        alert('Erro ao atualizar dashboard: ' + (err.message||err));
+      }
     }
 
-    // open modal
-    function buildModalHtml(prefixo, lookups){
-      const missoes = (lookups && lookups.missoes) ? lookups.missoes : [];
-      const cmtes = (lookups && lookups.comandantes) ? lookups.comandantes : [];
-      const mecs = (lookups && lookups.mecanicos) ? lookups.mecanicos : [];
+    // Quando salvar, movemos o card imediatamente (otimista) e chamamos API.
+    async function setStatusPrefixo(prefixo, status, extras){
+      // local DOM move otimista
+      const selector = `.card[data-prefixo="${prefixo}"]`;
+      const card = document.querySelector(selector);
+      let moved = false;
+      try{
+        if (card){
+          // determine target list
+          const target = (status === 'MNT' || status === 'INDISPONIVEL') ? $('#indList') : $('#dispList');
+          target.insertBefore(card, target.firstChild);
+          moved = true;
+        }
+        const params = Object.assign({ fn:'setstatus', prefixo, status }, extras||{});
+        const r = await apiFetch(params);
+        if (!r || !r.ok) throw new Error((r && r.error) || 'Falha ao salvar');
+        // good: optionally refresh a minimal part or full
+        setTimeout(refreshAll, 250); // pega eventual consistência do servidor; leve atraso para evitar spike
+        return r.data;
+      }catch(err){
+        // revert if moved
+        await refreshAll();
+        throw err;
+      }
+    }
+
+    // Modal HTML (campos empilhados)
+    function buildModalHtml(prefixo){
+      const missoes = LOOKUPS.missoes || [];
+      const cmtes   = LOOKUPS.comandantes || [];
+      const mecs    = LOOKUPS.mecanicos || [];
       return `
       <div class="modal-backdrop" id="modalBackdrop">
         <div class="modal" role="dialog" aria-modal="true">
           <h3>Editar status — ${prefixo}</h3>
-          <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
-          <div style="display:flex;gap:8px;margin:10px 0">
-            <button id="optDisponivel" class="btn primary">1 — Disponível</button>
-            <button id="optIndisponivel" class="btn">2 — Indisponível</button>
+          <div class="row small">Escolha 1 = Disponível ou 2 = Indisponível</div>
+
+          <div class="row" style="display:flex;gap:8px;margin-top:8px">
+            <button id="optDisponivel" class="btn primary" style="flex:1">1 — Disponível</button>
+            <button id="optIndisponivel" class="btn" style="flex:1">2 — Indisponível</button>
           </div>
 
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-            <label style="flex:1 1 45%">Missão
+          <div class="row" style="margin-top:12px">
+            <label>Missão
               <select id="selMissao" class="input">
                 <option value="">— Selecione —</option>
                 ${missoes.map(m=>`<option>${m}</option>`).join('')}
                 <option value="__OUTRO__">Outro (digitar)</option>
               </select>
-              <input id="inpMissao" class="input" style="margin-top:6px;display:none" placeholder="Digite a missão">
+              <input id="inpMissao" class="input" style="display:none;margin-top:8px" placeholder="Digite a missão">
             </label>
-            <label style="flex:1 1 25%">Comandante
+          </div>
+
+          <div class="row">
+            <label>Comandante
               <select id="selCmte" class="input">
                 <option value="">— Selecione —</option>
                 ${cmtes.map(m=>`<option>${m}</option>`).join('')}
                 <option value="__OUTRO__">Outro (digitar)</option>
               </select>
-              <input id="inpCmte" class="input" style="margin-top:6px;display:none" placeholder="Digite o comandante">
+              <input id="inpCmte" class="input" style="display:none;margin-top:8px" placeholder="Digite o comandante">
             </label>
-            <label style="flex:1 1 25%">Mecânico
+          </div>
+
+          <div class="row">
+            <label>Mecânico
               <select id="selMec" class="input">
                 <option value="">— Selecione —</option>
                 ${mecs.map(m=>`<option>${m}</option>`).join('')}
                 <option value="__OUTRO__">Outro (digitar)</option>
               </select>
-              <input id="inpMec" class="input" style="margin-top:6px;display:none" placeholder="Digite o mecânico">
+              <input id="inpMec" class="input" style="display:none;margin-top:8px" placeholder="Digite o mecânico">
             </label>
           </div>
 
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <label style="flex:1">Motivo (categoria)
+          <div class="row">
+            <label>Motivo (categoria)
               <select id="selMotivoCat" class="input">
                 <option value="">— Categoria —</option>
                 <option value="Programada">Programada</option>
@@ -183,16 +296,15 @@
                 <option value="Administrativa">Administrativa</option>
               </select>
             </label>
-            <!-- removi PRE-MOTIVO conforme solicitado -->
           </div>
 
-          <div style="margin-top:8px">
+          <div class="row">
             <label>Observações
               <input id="inpObs" class="input" placeholder="Observações (opcional)">
             </label>
           </div>
 
-          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+          <div class="actions">
             <button id="btnCancel" class="btn">Cancelar</button>
             <button id="btnSave" class="btn primary">Salvar</button>
           </div>
@@ -201,19 +313,15 @@
       `;
     }
 
-    let LOOKUPS_CACHE = null;
-    async function fetchLookups(){
-      if (LOOKUPS_CACHE) return LOOKUPS_CACHE;
-      try{ const r = await apiFetch({ fn:'lookups' }); if (r && r.ok && r.data){ LOOKUPS_CACHE = r.data; return LOOKUPS_CACHE; } }catch(e){ console.warn('lookups fail', e); }
-      return { bases:[], prefixos:[], missoes:[], comandantes:[], copilotos:[], mecanicos:[] };
-    }
-
-    async function showEditModal(prefixo){
-      const lookups = await fetchLookups();
+    // abre modal e conecta handlers
+    function showEditModal(prefixo){
+      // remove existente
       const existing = document.getElementById('modalBackdrop');
       if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+      // criar
       const container = document.createElement('div');
-      container.innerHTML = buildModalHtml(prefixo, lookups);
+      container.innerHTML = buildModalHtml(prefixo);
       document.body.appendChild(container.firstElementChild);
 
       const selMissao = document.getElementById('selMissao');
@@ -227,11 +335,13 @@
       selCmte && selCmte.addEventListener('change', ()=> inpCmte.style.display = selCmte.value==='__OUTRO__' ? 'block' : 'none');
       selMec && selMec.addEventListener('change', ()=> inpMec.style.display = selMec.value==='__OUTRO__' ? 'block' : 'none');
 
-      document.getElementById('btnCancel').addEventListener('click', ()=> { const b=document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b); });
+      document.getElementById('btnCancel').addEventListener('click', ()=> {
+        const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b);
+      });
 
       document.getElementById('btnSave').addEventListener('click', async ()=>{
         const sDisp = document.getElementById('optDisponivel').classList.contains('primary');
-        const status = sDisp ? 'STAND BY' : 'MNT'; // envia status normalizado
+        const status = sDisp ? 'STAND BY' : 'MNT';
         const missao = (selMissao && selMissao.value==='__OUTRO__') ? (inpMissao.value.trim()||'') : (selMissao ? selMissao.value : '');
         const comandante = (selCmte && selCmte.value==='__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte ? selCmte.value : '');
         const mecanico = (selMec && selMec.value==='__OUTRO__') ? (inpMec.value.trim()||'') : (selMec ? selMec.value : '');
@@ -239,11 +349,10 @@
         const motivo_categoria = (document.getElementById('selMotivoCat')||{value:''}).value || '';
 
         try{
-          // envia date para garantir alteração na data mostrada (fData)
           await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, obs, motivo_categoria, date: $('#fData').value || '' });
           const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b);
-          // força reload completo para mover o card entre listas
-          await refreshAll();
+          // já movemos otimisticamente; atualiza estado final em background
+          setTimeout(refreshAll, 300);
         }catch(err){
           alert('Erro ao salvar: ' + (err.message||err));
           await refreshAll();
@@ -251,46 +360,39 @@
       });
 
       const btnDisp = document.getElementById('optDisponivel');
-      const btnInd = document.getElementById('optIndisponivel');
-      function setActive(which){ if (which==='disp'){ btnDisp.classList.add('primary'); btnInd.classList.remove('primary'); } else { btnInd.classList.add('primary'); btnDisp.classList.remove('primary'); } }
+      const btnInd  = document.getElementById('optIndisponivel');
+      function setActive(which){
+        if (which==='disp'){ btnDisp.classList.add('primary'); btnInd.classList.remove('primary'); }
+        else { btnInd.classList.add('primary'); btnDisp.classList.remove('primary'); }
+      }
       btnDisp.addEventListener('click', ()=> setActive('disp'));
       btnInd.addEventListener('click', ()=> setActive('ind'));
       setActive('disp');
 
+      // fechar clicando fora
       document.getElementById('modalBackdrop').addEventListener('click', (ev)=>{ if (ev.target.id==='modalBackdrop'){ const b=document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b); } });
     }
 
-    async function setStatusPrefixo(prefixo, status, extras){
-      // status must be 'STAND BY' (available) or 'MNT' (indisponivel)
-      try{
-        // optimistic visual change (subtle)
-        const card = document.querySelector(`.prefixo[data-prefixo="${prefixo}"]`)?.closest('.card');
-        if (card) { card.style.opacity='0.6'; }
-        const params = Object.assign({ fn:'setstatus', prefixo, status }, extras||{});
-        const r = await apiFetch(params);
-        if (!r || !r.ok) throw new Error(r && r.error ? r.error : 'Falha ao salvar');
-        // ensure full refresh (move between lists)
-        if (card) card.style.opacity='1';
-        return r.data;
-      }catch(e){
-        throw e;
-      }
-    }
-
-    // delegation: click prefixo
+    // delegação de clique para prefixos (dinâmicos)
     document.addEventListener('click', (ev) => {
       const el = ev.target.closest('.prefixo[data-prefixo]');
       if (!el) return;
-      const p = el.getAttribute('data-prefixo') || el.textContent.trim();
-      showEditModal(p);
+      const prefixo = el.getAttribute('data-prefixo') || el.textContent.trim();
+      if (!prefixo) return;
+      showEditModal(prefixo);
     });
 
-    // events
+    // eventos UI
     $('#btnFiltrar').addEventListener('click', refreshAll);
     $('#btnRefresh').addEventListener('click', refreshAll);
     $('#fBusca').addEventListener('input', debounce(refreshAll, 350));
+    document.addEventListener('keydown', (e)=>{ if (e.key==='Enter' && document.getElementById('modalBackdrop')) { e.preventDefault(); } });
+
     // init
-    (async function init(){ $('#fData').value = new Date().toISOString().slice(0,10); await refreshAll(); })();
+    (async function init(){
+      $('#fData').value = new Date().toISOString().slice(0,10);
+      await refreshAll();
+    })();
   </script>
 </body>
 </html>
