@@ -20,6 +20,7 @@
     :root{
       --bg:#0b1320; --card:#111827; --muted:#94a3b8; --text:#e5e7eb; --border:#1f2937;
       --brand:#22c55e; --brand-2:#3b82f6; --danger:#ef4444; --chip:#0f172a; --line:#1f2937;
+      --yellow:#fbbf24;
     }
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
@@ -31,7 +32,7 @@
     .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
     .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 4px rgba(34,197,94,.25)}
     .spacer{flex:1}
-    .btn{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:#fff;display:flex;align-items:center;gap:8px;cursor:pointer}
+    .btn{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:#e5e7eb;display:flex;align-items:center;gap:8px;cursor:pointer}
     .btn.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
 
     .filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-top:14px}
@@ -61,7 +62,8 @@
     .hdivider{height:4px;background:var(--line);border-radius:3px;flex:1}
 
     .hlist{display:flex;flex-wrap:wrap;gap:14px;align-items:stretch}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;min-width:260px;max-width:360px;flex:1 1 260px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;min-width:260px;max-width:360px;flex:1 1 260px;transition:transform .12s}
+    .card:hover{transform:translateY(-4px)}
     .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
     .prefixo{font-weight:800;font-size:18px}
     .chip{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--chip);border:1px solid var(--border)}
@@ -92,8 +94,8 @@
 
     #exportArea{
       background:var(--bg);
-      padding:32px 36px 36px;   /* respiro interno pro PDF e pra tela */
-      border-radius:16px;       /* opcional: dá um acabamento melhor no recorte */
+      padding:32px 36px 36px;
+      border-radius:16px;
     }
 
     /* Indica que o prefixo é clicável */
@@ -105,14 +107,19 @@
     .modal{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; width:520px; max-width:95%; color:var(--text); }
     .modal h3{ margin:0 0 8px 0; font-size:16px }
     .modal .row{ margin:8px 0; flex-direction:column; align-items:flex-start; gap:8px }
-    .modal label{ width:100%; }
+    .modal label{ width:100%; display:flex; flex-direction:column; gap:6px; color:#cbd5e1; font-size:13px }
     .modal .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px }
     .small{ font-size:13px; color:var(--muted) }
 
-    /* Form layout in modal: vertical stacked */
-    .modal .stack { display:flex; flex-direction:column; gap:8px; width:100%; }
-    .modal .inline { display:flex; gap:8px; width:100%; }
-    .modal .inline > label { flex:1; }
+    /* vertical inputs for modal */
+    .modal .form-col{display:flex;flex-direction:column;gap:8px}
+    .modal select.input, .modal input.input { width:100%; height:40px; padding:0 10px; border-radius:8px; background:#0b1220; border:1px solid var(--border); color:var(--text); }
+
+    .motivo-pill{ padding:6px 10px; border-radius:10px; border:1px solid var(--border); cursor:pointer; display:inline-block; margin-right:8px; font-weight:700 }
+    .motivo-pill.active{ box-shadow:0 6px 18px rgba(0,0,0,.4) }
+    .motivo-pill.prog{ background: rgba(34,197,94,.08); color: #34d399 }
+    .motivo-pill.disc{ background: rgba(239,68,68,.08); color: #ef4444 }
+    .motivo-pill.adm { background: rgba(251,191,36,.08); color: var(--yellow) }
   </style>
 </head>
 <body>
@@ -173,16 +180,16 @@
           <div><h3>Disponíveis</h3><div class="val" id="kDisp">—</div></div>
         </div>
 
-  <div class="kpi">
-    <div class="icon i-red">⛔</div>
-    <div><h3>Indisponíveis</h3><div class="val" id="kInd">—</div></div>
-  </div>
+        <div class="kpi">
+          <div class="icon i-red">⛔</div>
+          <div><h3>Indisponíveis</h3><div class="val" id="kInd">—</div></div>
+        </div>
 
-  <div class="kpi">
-    <div class="icon i-blue">⏱</div>
-    <div><h3>Horas no mês</h3><div class="val" id="kHoras">—</div></div>
-  </div>
-</div>
+        <div class="kpi">
+          <div class="icon i-blue">⏱</div>
+          <div><h3>Horas no mês</h3><div class="val" id="kHoras">—</div></div>
+        </div>
+      </div>
 
       <!-- ====== BLOCO EXPORTÁVEL ====== -->
       <div id="exportArea">
@@ -199,38 +206,38 @@
         </div>
       </div>
 
-<!-- FAIXA: DISPONÍVEL (DISPONÍVEL) -->
-<div class="hgroup">
-  <div class="hline">
-    <span class="hlabel">DISPONÍVEL <span class="muted" id="cntDISP">(0)</span></span>
-    <span class="hdivider"></span>
-  </div>
-  <div class="hlist" id="dispList"></div>
-</div>
-
-<!-- FAIXA: INDISPONÍVEL (MNT) -->
-<div class="hgroup">
-  <div class="hline">
-    <span class="hlabel">INDISPONÍVEL <span class="muted" id="cntIND">(0)</span></span>
-    <span class="hdivider"></span>
-  </div>
-  <div class="hlist" id="indList"></div>
-</div>
-
-        <!-- Pizza -->
-        <div class="section">
-          <h2>Status do dia</h2>
-          <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
-            <div class="muted" id="pie_date_hint"></div>
-            <div style="flex:1"></div>
-            <label>Base
-              <select id="pieBase" style="min-width:180px">
-                <option value="">Todas</option>
-              </select>
-            </label>
-          </div>
+      <!-- FAIXA: DISPONÍVEL (DISPONÍVEL) -->
+      <div class="hgroup">
+        <div class="hline">
+          <span class="hlabel">DISPONÍVEL <span class="muted" id="cntDISP">(0)</span></span>
+          <span class="hdivider"></span>
         </div>
-        <div id="pie_div"></div>
+        <div class="hlist" id="dispList"></div>
+      </div>
+
+      <!-- FAIXA: INDISPONÍVEL (MNT) -->
+      <div class="hgroup">
+        <div class="hline">
+          <span class="hlabel">INDISPONÍVEL <span class="muted" id="cntIND">(0)</span></span>
+          <span class="hdivider"></span>
+        </div>
+        <div class="hlist" id="indList"></div>
+      </div>
+
+      <!-- Pizza -->
+      <div class="section">
+        <h2>Status do dia</h2>
+        <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
+          <div class="muted" id="pie_date_hint"></div>
+          <div style="flex:1"></div>
+          <label>Base
+            <select id="pieBase" style="min-width:180px">
+              <option value="">Todas</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div id="pie_div"></div>
       </div>
 
       <div class="divider"><span class="label">Indicadores de Disponibilidade</span></div>
@@ -267,7 +274,7 @@
       <!-- Pareto -->
       <div class="section">
         <h2>Pareto • Motivos de Manutenção</h2>
-        <div class="row" style="gap:14px;align-items:center;flex-wrap:wrap">
+        <div class="row" style="gap:14px; align-items:center; flex-wrap:wrap">
           <label>Período
             <select id="paretoRangeSel">
               <option value="15d">15 dias</option>
@@ -325,6 +332,7 @@
 
     google.charts.load('current', {'packages':['corechart']});
     const $ = s => document.querySelector(s);
+    const $all = s => Array.from(document.querySelectorAll(s));
     const debounce = (fn,ms=350)=>{ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);}};
     const TOK_KEY='dash_t';
     function getToken(){ return localStorage.getItem(TOK_KEY)||''; }
@@ -424,60 +432,62 @@
 
     function chip(status){
       const S = String(status||'').toUpperCase();
-      if (S==='STAND BY') return '<span class="chip sb">DISPONÍVEL</span>';
+      if (S==='STAND BY' || S==='DISPONIVEL' || S==='DISPONÍVEL') return '<span class="chip sb">DISPONÍVEL</span>';
       if (S==='MISSÃO' || S==='MISSAO') return '<span class="chip ms">EM MISSÃO</span>';
-      if (S==='MNT') return '<span class="chip mt">INDISPONÍVEL</span>';
+      if (S==='MNT' || S==='INDISPONIVEL') return '<span class="chip mt">INDISPONÍVEL</span>';
       return `<span class="chip">${status||'-'}</span>`;
     }
 
-    // === Substitui a função renderListaGrouped antiga por esta (inclui data-prefixo) ===
-   function renderListaGrouped(rows){
-  const baseSel = $('#progBase').value || '';
-  const norm = s => String(s||'').toLowerCase();
+    // === Substitui a função renderListaGrouped antiga por esta (inclui data-prefixo e data-status / data-motivo) ===
+    function renderListaGrouped(rows){
+      const baseSel = $('#progBase').value || '';
+      const norm = s => String(s||'').toLowerCase();
 
-  const DISP = []; // Disponível
-  const IND  = []; // Indisponível (MNT)
+      const DISP = []; // Disponível
+      const IND  = []; // Indisponível (MNT)
 
-  for (const r of rows){
-    if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
-    const st = String(r.Status||'').toUpperCase();
+      for (const r of rows){
+        if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
+        const st = String(r.Status||'').toUpperCase();
 
-    const horas = getHoras(r.Prefixo);
-    const horasChip = horas > 0
-      ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
-      : '';
+        const horas = getHoras(r.Prefixo);
+        const horasChip = horas > 0
+          ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
+          : '';
 
-    // prefixo com atributo data-prefixo e classe clicável
-    const card = `
-      <div class="card" data-prefixo-card="${r.Prefixo||''}">
-        <div class="title">
-          <div class="prefixo" data-prefixo="${r.Prefixo||''}" title="Clique para alterar o status">${r.Prefixo||'-'}</div>
-          <div style="display:flex;gap:8px;align-items:center">
-            ${horasChip}
-            ${chip(r.Status)}
-          </div>
-        </div>
-        <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
-        <div class="meta">
-          <div><b>Missão:</b> ${r.Missao||'-'}</div>
-          <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
-          <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
-          ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
-          ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
-        </div>
-        ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
-      </div>`;
+        // prefixo com atributo data-prefixo e classe clicável
+        const motivoEsc = (r.Motivo_Manutencao||'').toString();
+        const card = `
+          <div class="card" data-prefix-card="${r.Prefixo||''}" data-status="${st}" data-motivo="${motivoEsc}">
+            <div class="title">
+              <div class="prefixo" data-prefixo="${r.Prefixo||''}" title="Clique para alterar o status">${r.Prefixo||'-'}</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                ${horasChip}
+                ${chip(r.Status)}
+              </div>
+            </div>
+            <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
+            <div class="meta">
+              <div><b>Missão:</b> ${r.Missao||'-'}</div>
+              <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
+              <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
+              ${r.Motivo_Manutencao ? `<div><b>Motivo:</b> ${r.Motivo_Manutencao}</div>` : ``}
+              ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
+            </div>
+            ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
+          </div>`;
 
-    if (st==='MNT') IND.push(card);
-    else           DISP.push(card);
-  }
+        if (st==='MNT') IND.push(card);
+        else           DISP.push(card);
+      }
 
-  $('#dispList').innerHTML = DISP.length ? DISP.join('') : `<div class="muted">—</div>`;
-  $('#indList').innerHTML  = IND.length  ? IND.join('')  : `<div class="muted">—</div>`;
+      $('#dispList').innerHTML = DISP.length ? DISP.join('') : `<div class="muted">—</div>`;
+      $('#indList').innerHTML  = IND.length  ? IND.join('')  : `<div class="muted">—</div>`;
 
-  $('#cntDISP').textContent = `(${DISP.length})`;
-  $('#cntIND').textContent  = `(${IND.length})`;
-}
+      $('#cntDISP').textContent = `(${DISP.length})`;
+      $('#cntIND').textContent  = `(${IND.length})`;
+    }
+
     /* Charts */
     function drawColumns(rows, isMonthly){
       const dt = new google.visualization.DataTable();
@@ -513,26 +523,43 @@
       new google.visualization.PieChart($('#pie_div')).draw(dt, options);
     }
     function drawPareto(rows){
-      // rows: [{Motivo, Qtde}, ...]
+      // rows = [{Motivo, Qtde}, ...]
       const dt = new google.visualization.DataTable();
-      dt.addColumn('string','Motivo'); dt.addColumn('number','Qtde');
-      // role style para cor por barra
-      dt.addColumn({type:'string', role:'style'});
+      dt.addColumn('string','Motivo');
+      dt.addColumn('number','Qtde');
+      dt.addColumn({type:'string', role:'style'}); // cor por barra
+
+      const colorMap = {
+        'programada': '#22c55e',
+        'programado': '#22c55e',
+        'discrepância': '#ef4444',
+        'discrepancia': '#ef4444',
+        'discrepância': '#ef4444',
+        'administrativa': '#fbbf24',
+        'administrativo': '#fbbf24'
+      };
+
       rows.forEach(r=>{
-        const m = String(r.Motivo||'').toLowerCase();
-        let color = '#ef4444'; // default vermelho
-        if (m.includes('program') || m.includes('programada')) color = '#22c55e'; // verde
-        else if (m.includes('discrep')) color = '#ef4444'; // vermelho
-        else if (m.includes('admin') || m.includes('administr')) color = '#fbbf24'; // amarelo
-        else color = '#9ca3af';
-        dt.addRow([r.Motivo, Number(r.Qtde||0), `color: ${color}`]);
+        const m = (r.Motivo||'').toString();
+        const key = m.toLowerCase();
+        let color = '#ef4444'; // fallback vermelho
+        // heurística: se o texto conter palavras, mapear
+        if (key.indexOf('program')!==-1) color = colorMap['programada'];
+        else if (key.indexOf('discrep')!==-1) color = colorMap['discrepancia'];
+        else if (key.indexOf('admin')!==-1) color = colorMap['administrativa'];
+        else {
+          // se exatamente for igual a uma das chaves
+          Object.keys(colorMap).forEach(k=>{ if (key===k) color=colorMap[k]; });
+        }
+        dt.addRow([m, Number(r.Qtde||0), `color: ${color}`]);
       });
+
       const options = {
         backgroundColor:'transparent', legend:'none',
         annotations:{ textStyle:{ color:'#e5e7eb', bold:true }},
         hAxis:{ textStyle:{ color:'#94a3b8' }, gridlines:{ color:'#1f2937' }, minValue:0 },
         vAxis:{ textStyle:{ color:'#94a3b8' } },
-        colors:['#ef4444'], chartArea:{ left:120, top:10, right:20, height:260 }, height:360
+        chartArea:{ left:120, top:10, right:20, height:260 }, height:360
       };
       new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
     }
@@ -557,12 +584,10 @@
       HORAS_MAP = {};
       try{
         const h = await apiFetch({ fn:'horas', date });
-        if (h && h.ok && h.data && Array.isArray(h.data.rows)){
+        if (h && h.ok && h.data && h.data.rows){
           h.data.rows.forEach(r => {
             HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0);
           });
-        } else if (h && h.ok && h.data && h.data.rows === undefined && h.data.ok === false) {
-          // ignore
         }
       }catch(e){ /* segue sem horas se falhar */ }
 
@@ -589,29 +614,28 @@
 
       renderListaGrouped(data.list);
       // Total vindo do backend (deduplicado/filtrado). Fallback = soma do mapa.
-let totalHoras = 0;
-try{
-  const h = await apiFetch({ fn:'horas', date });
-  if (h && h.ok && h.data){
-    // preencher HORAS_MAP (para chips nos cards)
-    HORAS_MAP = {};
-    if (Array.isArray(h.data.rows)){
-      h.data.rows.forEach(r => {
-        HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0);
-      });
-    }
-    totalHoras = Number(h.data.total || 0);
-    if (!totalHoras){
-      totalHoras = Object.values(HORAS_MAP).reduce((acc,v)=>acc+(Number(v)||0),0);
-    }
-  }
-}catch(e){ /* mantém 0 em caso de erro */ }
+      let totalHoras = 0;
+      try{
+        const h = await apiFetch({ fn:'horas', date });
+        if (h && h.ok && h.data){
+          HORAS_MAP = {};
+          if (Array.isArray(h.data.rows)){
+            h.data.rows.forEach(r => {
+              HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0);
+            });
+          }
+          totalHoras = Number(h.data.total || 0);
+          if (!totalHoras){
+            totalHoras = Object.values(HORAS_MAP).reduce((acc,v)=>acc+(Number(v)||0),0);
+          }
+        }
+      }catch(e){ /* mantém 0 em caso de erro */ }
 
-$('#kDisp').textContent  = data.kpis.disponiveis ?? '0';
-$('#kInd').textContent   = data.kpis.manutencao ?? '0';
-$('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
-  minimumFractionDigits:1, maximumFractionDigits:1
-});
+      $('#kDisp').textContent  = data.kpis.disponiveis ?? '0';
+      $('#kInd').textContent   = data.kpis.manutencao ?? '0';
+      $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
+        minimumFractionDigits:1, maximumFractionDigits:1
+      });
 
       google.charts.setOnLoadCallback(()=> {
         drawPie(data.pie, date);
@@ -634,153 +658,160 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
       return r.data;
     }
 
-    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC + motivo ===== */
-    function buildModalHtml(prefixo, lookups){
+    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC + Motivo ===== */
+    function buildModalHtml(prefixo, current){
       // fallback arrays seguros
-      const bases = (lookups && lookups.bases) ? lookups.bases : [];
-      const missoes = (lookups && lookups.missoes) ? lookups.missoes : [];
-      const cmtes   = (lookups && lookups.comandantes) ? lookups.comandantes : [];
-      const mecs    = (lookups && lookups.mecanicos) ? lookups.mecanicos : [];
+      const missoes = (LOOKUPS && LOOKUPS.missoes) ? LOOKUPS.missoes : [];
+      const cmtes   = (LOOKUPS && LOOKUPS.comandantes) ? LOOKUPS.comandantes : [];
+      const mecs    = (LOOKUPS && LOOKUPS.mecanicos) ? LOOKUPS.mecanicos : [];
+      const bases   = (LOOKUPS && LOOKUPS.bases) ? LOOKUPS.bases : [];
 
+      const cur = current || {};
       return `
-        <div class="modal-backdrop" id="modalBackdrop">
-          <div class="modal" role="dialog" aria-modal="true">
-            <h3>Editar status — ${prefixo}</h3>
+      <div class="modal-backdrop" id="modalBackdrop">
+        <div class="modal" role="dialog" aria-modal="true">
+          <h3>Editar status — ${prefixo}</h3>
 
-            <div class="stack">
-              <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
-              <div style="display:flex;gap:8px;margin-top:6px">
-                <button id="optDisponivel" class="btn primary">1 — Disponível</button>
-                <button id="optIndisponivel" class="btn">2 — Indisponível</button>
-              </div>
-
-              <div class="inline" style="margin-top:8px">
-                <label style="flex:1">Base
-                  <select id="selBase" class="input">
-                    <option value="">— Selecione —</option>
-                    ${bases.map(b=>`<option>${b}</option>`).join('')}
-                  </select>
-                </label>
-
-                <label style="flex:1">Motivo (se Indisponível)
-                  <select id="selMotivo" class="input">
-                    <option value="">— Selecione —</option>
-                    <option value="Programada">Programada</option>
-                    <option value="Discrepância">Discrepância</option>
-                    <option value="Administrativa">Administrativa</option>
-                  </select>
-                </label>
-              </div>
-
-              <div class="stack" style="margin-top:6px">
-                <label>Missão
-                  <select id="selMissao" class="input">
-                    <option value="">— Selecione —</option>
-                    ${missoes.map(m => `<option>${m}</option>`).join('')}
-                    <option value="__OUTRO__">Outro (digitar)</option>
-                  </select>
-                  <input id="inpMissao" class="input" style="margin-top:6px;display:none" placeholder="Digite a missão">
-                </label>
-
-                <label>Comandante
-                  <select id="selCmte" class="input">
-                    <option value="">— Selecione —</option>
-                    ${cmtes.map(m => `<option>${m}</option>`).join('')}
-                    <option value="__OUTRO__">Outro (digitar)</option>
-                  </select>
-                  <input id="inpCmte" class="input" style="margin-top:6px;display:none" placeholder="Digite o comandante">
-                </label>
-
-                <label>Mecânico
-                  <select id="selMec" class="input">
-                    <option value="">— Selecione —</option>
-                    ${mecs.map(m => `<option>${m}</option>`).join('')}
-                    <option value="__OUTRO__">Outro (digitar)</option>
-                  </select>
-                  <input id="inpMec" class="input" style="margin-top:6px;display:none" placeholder="Digite o mecânico">
-                </label>
-              </div>
-
-              <label>Observações
-                <input id="inpObs" class="input" placeholder="Observações (opcional)">
-              </label>
-            </div>
-
-            <div class="actions">
-              <button id="btnCancel" class="btn">Cancelar</button>
-              <button id="btnSave" class="btn primary">Salvar</button>
+          <div class="row">
+            <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
+            <div style="display:flex;gap:8px;margin-top:6px">
+              <button id="optDisponivel" class="btn primary">1 — Disponível</button>
+              <button id="optIndisponivel" class="btn">2 — Indisponível</button>
             </div>
           </div>
+
+          <div class="row form-col" style="margin-top:10px">
+            <label>Base
+              <select id="selBase" class="input">
+                <option value="">— Selecione —</option>
+                ${bases.map(b=>`<option>${b}</option>`).join('')}
+              </select>
+            </label>
+
+            <label>Missão
+              <select id="selMissao" class="input">
+                <option value="">— Selecione —</option>
+                ${missoes.map(m => `<option>${m}</option>`).join('')}
+              </select>
+            </label>
+
+            <label>Comandante
+              <select id="selCmte" class="input">
+                <option value="">— Selecione —</option>
+                ${cmtes.map(m => `<option>${m}</option>`).join('')}
+              </select>
+            </label>
+
+            <label>Mecânico
+              <select id="selMec" class="input">
+                <option value="">— Selecione —</option>
+                ${mecs.map(m => `<option>${m}</option>`).join('')}
+              </select>
+            </label>
+
+            <label>Motivo (quando Indisponível)
+              <select id="selMotivo" class="input">
+                <option value="">— Selecione —</option>
+                <option value="Programada">Programada</option>
+                <option value="Discrepância">Discrepância</option>
+                <option value="Administrativa">Administrativa</option>
+              </select>
+            </label>
+
+            <label>Observações
+              <input id="inpObs" class="input" placeholder="Observações (opcional)">
+            </label>
+          </div>
+
+          <div class="actions">
+            <button id="btnCancel" class="btn">Cancelar</button>
+            <button id="btnSave" class="btn primary">Salvar</button>
+          </div>
         </div>
-      `;
+      </div>`;
     }
 
     async function showEditModal(prefixo){
-      // garante lookups atualizados (tenta cache LOOKUPS, senão busca)
+      // preenche LOOKUPS caso não tenha
       try{
         if (!LOOKUPS || !LOOKUPS.missoes || LOOKUPS.missoes.length===0){
           const res = await apiFetch({ fn: 'lookups' });
           if (res && res.ok && res.data) LOOKUPS = res.data;
         }
       }catch(e){
-        // se falhar, segue com arrays vazios — modal ainda abre
         console.warn('Não foi possível carregar lookups:', e);
       }
 
-      // cria modal e anexa ao body (remove modal anterior se existir)
+      // tenta obter o registro atual para a data selecionada
+      const date = $('#fData').value || new Date().toISOString().slice(0,10);
+      let current = null;
+      try{
+        const listResp = await apiFetch({ fn:'list', date });
+        if (listResp && listResp.ok){
+          const recs = listResp.data || [];
+          current = recs.find(r => String(r.Prefixo||'').trim()===String(prefixo).trim()) || null;
+        }
+      }catch(e){
+        // ignorar se falhar, modal abre mesmo assim
+      }
+
+      // cria modal e insere
       const existing = document.getElementById('modalBackdrop');
       if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
 
       const container = document.createElement('div');
-      container.innerHTML = buildModalHtml(prefixo, LOOKUPS);
-      document.body.appendChild(container.firstElementChild); // anexa only the backdrop
+      container.innerHTML = buildModalHtml(prefixo, current);
+      document.body.appendChild(container.firstElementChild);
 
       // elementos
       const bp = document.getElementById('modalBackdrop');
+      const selBase = document.getElementById('selBase');
       const selMissao = document.getElementById('selMissao');
       const selCmte   = document.getElementById('selCmte');
       const selMec    = document.getElementById('selMec');
-      const inpMissao = document.getElementById('inpMissao');
-      const inpCmte   = document.getElementById('inpCmte');
-      const inpMec    = document.getElementById('inpMec');
-      const inpObs    = document.getElementById('inpObs');
-      const selBase   = document.getElementById('selBase');
       const selMotivo = document.getElementById('selMotivo');
+      const inpObs    = document.getElementById('inpObs');
 
-      // toggle "Outro (digitar)"
-      selMissao && selMissao.addEventListener('change', ()=> { inpMissao.style.display = selMissao.value==='__OUTRO__' ? 'block' : 'none'; });
-      selCmte   && selCmte.addEventListener('change', ()=> { inpCmte.style.display   = selCmte.value==='__OUTRO__' ? 'block' : 'none'; });
-      selMec    && selMec.addEventListener('change', ()=> { inpMec.style.display    = selMec.value==='__OUTRO__' ? 'block' : 'none'; });
+      // prefill if current exists
+      if (current){
+        if (selBase) selBase.value = current.Base || '';
+        if (selMissao) selMissao.value = current.Missao || '';
+        if (selCmte) selCmte.value = current.Comandante || '';
+        if (selMec) selMec.value = current.Mecanico || '';
+        if (selMotivo) selMotivo.value = current.Motivo_Manutencao || '';
+        if (inpObs) inpObs.value = current.Observacoes || '';
+      }
 
       // Buttons
       document.getElementById('btnCancel').addEventListener('click', ()=> { const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b); });
       document.getElementById('btnSave').addEventListener('click', async ()=>{
-        // qual botão ativo
+        // which status selected
         const sDisp = document.getElementById('optDisponivel').classList.contains('primary');
         const sInd  = document.getElementById('optIndisponivel').classList.contains('primary');
         let status = sDisp ? 'DISPONIVEL' : (sInd ? 'INDISPONIVEL' : 'DISPONIVEL');
 
-        const missao = (selMissao && selMissao.value === '__OUTRO__') ? (inpMissao.value.trim()||'') : (selMissao ? selMissao.value : '');
-        const comandante = (selCmte && selCmte.value === '__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte ? selCmte.value : '');
-        const mecanico = (selMec && selMec.value === '__OUTRO__') ? (inpMec.value.trim()||'') : (selMec ? selMec.value : '');
-        const obs = inpObs ? inpObs.value.trim() : '';
-        const base = selBase ? selBase.value : '';
+        const missao = selMissao ? selMissao.value : '';
+        const comandante = selCmte ? selCmte.value : '';
+        const mecanico = selMec ? selMec.value : '';
         const motivo = selMotivo ? selMotivo.value : '';
+        const base = selBase ? selBase.value : '';
+        const obs = inpObs ? inpObs.value.trim() : '';
 
-        // otimistic UI update: move card imediatamente
+        // optimistic UI update: mover cartão imediatamente para economizar espera
         try{
-          optimisticMoveCard(prefixo, status, { missao, comandante, mecanico, motivo, base, obs });
-        }catch(e){ console.warn('optimistic update falhou',e); }
+          applyOptimisticStatus(prefixo, status, { missao, comandante, mecanico, motivo, base, obs });
+        }catch(e){
+          console.warn('Optimistic update falhou:', e);
+        }
 
         try{
-          await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, motivo, base, obs, date: $('#fData').value || '' });
+          await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, motivo, base, obs, date: $('#fData').value || new Date().toISOString().slice(0,10) });
+          // on success, refresh to sync authoritative state
           const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b);
-          // garante consistência: recarrega tudo
           await refreshAll();
         }catch(err){
           alert('Erro ao salvar: ' + (err.message||err));
-          // se falhar, recarrega do backend para voltar ao estado correto
-          await refreshAll();
+          await refreshAll(); // força reload para desfazer optimistic se necessário
         }
       });
 
@@ -793,67 +824,57 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
       };
       btnDisp.addEventListener('click', ()=> setActive('disp'));
       btnInd.addEventListener('click', ()=> setActive('ind'));
-      setActive('disp');
+      setActive((current && String(current.Status||'').toUpperCase()==='MNT') ? 'ind' : 'disp');
 
       // fechar clicando fora
       bp.addEventListener('click', (ev)=>{ if (ev.target === bp){ if (bp && bp.parentNode) bp.parentNode.removeChild(bp); } });
     }
 
-    // optimistic DOM update: move card to correct list and update chip + meta quickly
-    function optimisticMoveCard(prefixo, status, extras){
-      const card = document.querySelector(`[data-prefixo-card="${prefixo}"]`);
+    // Optimistic UI update: move card immediately in DOM to avoid "delay"
+    function applyOptimisticStatus(prefixo, status, extras={}){
+      const pref = String(prefixo||'').trim();
+      if (!pref) return;
+      const card = document.querySelector(`[data-prefix-card="${pref}"]`);
       if (!card) return;
-      // update chip
-      const right = card.querySelector('.title > div:last-child');
+      const st = (String(status||'').toUpperCase().indexOf('INDISP')===0 || String(status||'').toUpperCase()==='MNT') ? 'MNT' : 'STAND BY';
+      // update attributes
+      card.setAttribute('data-status', st);
+      if (extras.motivo) card.setAttribute('data-motivo', extras.motivo);
+      // update chip visual
+      const right = card.querySelector('.title > div:nth-child(2)');
       if (right){
-        // replace chip (simple)
-        const horas = getHoras(prefixo);
-        const horasChip = horas > 0 ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>` : '';
-        right.innerHTML = `${horasChip} ${status && String(status).toUpperCase().indexOf('INDISP')===0 ? '<span class="chip mt">INDISPONÍVEL</span>' : '<span class="chip sb">DISPONÍVEL</span>'}`;
+        // replace last chip
+        const hoursChip = right.querySelector('.chip.hr');
+        const newChipHtml = `${hoursChip ? hoursChip.outerHTML : ''} ${st==='MNT' ? '<span class="chip mt">INDISPONÍVEL</span>' : '<span class="chip sb">DISPONÍVEL</span>'}`;
+        right.innerHTML = newChipHtml;
       }
-      // update meta fields
-      const meta = card.querySelector('.meta');
-      if (meta && extras){
-        const missao = extras.missao || '';
-        const cmte = extras.comandante || '';
-        const mec = extras.mecanico || '';
-        // replace first three lines — keep other fields if present
-        const rest = [];
-        meta.querySelectorAll('div').forEach((d,i)=>{
-          // collect any lines beyond the first 5 to keep
-          if (i>=5) rest.push(d.outerHTML);
-        });
-        meta.innerHTML = `<div><b>Missão:</b> ${missao||'-'}</div>
-                          <div><b>CMTE:</b> ${cmte||'-'}</div>
-                          <div><b>MEC:</b> ${mec||'-'}</div>
-                          ${extras.motivo ? `<div><b>Manutenção:</b> ${extras.motivo}</div>` : ''}
-                          ${rest.join('')}`;
-      }
-      // move to list
-      if (String(status).toUpperCase().indexOf('INDISP')===0){
-        // to ind
-        const target = $('#indList');
-        if (target) target.appendChild(card);
+      // move element to correct list
+      const nodeHtml = card.outerHTML;
+      card.remove();
+      if (st==='MNT'){
+        const container = document.getElementById('indList');
+        if (container && container.querySelector('.muted')) container.innerHTML = nodeHtml;
+        else container.insertAdjacentHTML('afterbegin', nodeHtml);
       } else {
-        const target = $('#dispList');
-        if (target) target.appendChild(card);
+        const container = document.getElementById('dispList');
+        if (container && container.querySelector('.muted')) container.innerHTML = nodeHtml;
+        else container.insertAdjacentHTML('afterbegin', nodeHtml);
       }
-      // update counts quickly
+      // refresh counts (cheap)
       const dispCount = document.querySelectorAll('#dispList .card').length;
-      const indCount = document.querySelectorAll('#indList .card').length;
+      const indCount  = document.querySelectorAll('#indList .card').length;
       $('#cntDISP').textContent = `(${dispCount})`;
       $('#cntIND').textContent  = `(${indCount})`;
     }
 
-    // === Delegação de clique: garante que prefixos dinâmicos abram modal ===
+    // === Delegação de clique: garante que prefixos dinâmicos abram modal (instantâneo) ===
     document.addEventListener('click', (ev) => {
-      // busca o elemento .prefixo com data-prefixo mais próximo do alvo do clique
       const el = ev.target.closest('.prefixo[data-prefixo]');
       if (!el) return;
       const prefixo = el.getAttribute('data-prefixo') || el.textContent.trim();
       if (!prefixo) return;
       showEditModal(prefixo);
-    });
+    }, { passive: true });
 
     /* Eventos */
     $('#btnFiltrar').addEventListener('click', refreshAll);
@@ -874,7 +895,6 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
     $('#fStatus').addEventListener('change', refreshAll);
 
     (async function init(){
-      // começa mostrando o login; se token válido, troca para dash
       showLogin();
       try{
         const ok = await checkMe();
@@ -889,17 +909,14 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
   /* ====== Baixar PDF ====== */
   async function downloadPDF(){
     try{
-      // usa exportRoot; se não existir, cai para exportArea
       const node = document.getElementById('exportRoot') || document.getElementById('exportArea');
       if (!node) { alert('Não encontrei a área a exportar (exportRoot/exportArea).'); return; }
 
       if (!window.html2canvas) { alert('html2canvas não carregado.'); return; }
       if (!window.jspdf || !window.jspdf.jsPDF) { alert('jsPDF não carregado.'); return; }
 
-      // espera layout estabilizar (gráficos etc.)
       await new Promise(r=>requestAnimationFrame(r));
 
-      // render em alta resolução
       const scale = Math.max(2, (window.devicePixelRatio || 1)) * 1.25;
       const canvas = await html2canvas(node, {
         backgroundColor: getComputedStyle(document.body).backgroundColor || '#0b1320',
@@ -911,7 +928,6 @@ $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
       const imgData = canvas.toDataURL('image/png');
       const w = canvas.width, h = canvas.height;
 
-      // margem bonita ~0.5"
       const margin = 36;
       const pdfW = w + margin * 2;
       const pdfH = h + margin * 2;
