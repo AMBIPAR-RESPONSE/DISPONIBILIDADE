@@ -7,7 +7,7 @@
 
   <!-- Fontes & Ícones -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@1" rel="stylesheet">
 
   <!-- Google Charts -->
   <script src="https://www.gstatic.com/charts/loader.js"></script>
@@ -20,7 +20,6 @@
     :root{
       --bg:#0b1320; --card:#111827; --muted:#94a3b8; --text:#e5e7eb; --border:#1f2937;
       --brand:#22c55e; --brand-2:#3b82f6; --danger:#ef4444; --chip:#0f172a; --line:#1f2937;
-      --warn:#f59e0b;
     }
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
@@ -34,11 +33,12 @@
     .spacer{flex:1}
     .btn{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:#fff;display:flex;align-items:center;gap:8px;cursor:pointer}
     .btn.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
-    .btn.ghost{background:transparent;color:#9aa4b2}
 
     .filters{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-top:14px}
     .input, select, button{height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:#e5e7eb}
     .input::placeholder{color:#64748b}
+    button.primary{background:var(--brand);border:none;color:#052e16;font-weight:700}
+    button.ghost{background:transparent;color:#9aa4b2}
     .row{display:flex;gap:12px;align-items:center}
     label{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:12px}
 
@@ -61,15 +61,14 @@
     .hdivider{height:4px;background:var(--line);border-radius:3px;flex:1}
 
     .hlist{display:flex;flex-wrap:wrap;gap:14px;align-items:stretch}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;min-width:260px;max-width:360px;flex:1 1 260px;transition:transform .12s}
-    .card:hover{transform:translateY(-4px)}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;min-width:260px;max-width:360px;flex:1 1 260px}
     .title{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
     .prefixo{font-weight:800;font-size:18px}
     .chip{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--chip);border:1px solid var(--border)}
     .chip.sb{color:#34d399}.chip.ms{color:#60a5fa}.chip.mt{color:#f87171}
     .chip.hr{background:rgba(34,197,94,.12); color:#34d399}
     .muted{color:var(--muted);font-size:12px}
-    .meta{display:flex;flex-direction:column;gap:6px;color:#cbd5e1;font-size:13px;margin-top:8px}
+    .meta{display:flex;gap:10px;flex-wrap:wrap;color:#cbd5e1;font-size:13px;margin-top:8px}
 
     #chart_div{height:360px}
     #pie_div{height:260px}
@@ -101,20 +100,19 @@
     .prefixo[data-prefixo]{ cursor:pointer; text-decoration:none; }
     .prefixo[data-prefixo]:hover{ text-decoration:underline; }
 
-    /* Modal simples - empilhado (vertical) */
+    /* Modal simples */
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:2000; }
-    .modal{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; width:520px; max-width:95%; color:var(--text); box-shadow:0 20px 50px rgba(0,0,0,.6)}
+    .modal{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; width:520px; max-width:95%; color:var(--text); }
     .modal h3{ margin:0 0 8px 0; font-size:16px }
-    .modal .row{ margin:8px 0; display:flex; gap:8px; flex-direction:column; align-items:stretch }
-    .modal label{ width:100%; display:flex; flex-direction:column; gap:6px; color:#cbd5e1; font-size:13px }
-    .modal select.input, .modal input.input { width:100%; box-sizing:border-box; }
+    .modal .row{ margin:8px 0; flex-direction:column; align-items:flex-start; gap:8px }
+    .modal label{ width:100%; }
     .modal .actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px }
     .small{ font-size:13px; color:var(--muted) }
 
-    .btnLoading{ opacity:.7; pointer-events:none }
-
-    /* Pareto slice colors hint */
-    .legend-swatch{ display:inline-block; width:12px; height:12px; margin-right:6px; vertical-align:middle; border-radius:3px }
+    /* Form layout in modal: vertical stacked */
+    .modal .stack { display:flex; flex-direction:column; gap:8px; width:100%; }
+    .modal .inline { display:flex; gap:8px; width:100%; }
+    .modal .inline > label { flex:1; }
   </style>
 </head>
 <body>
@@ -132,17 +130,17 @@
   </div>
 
   <!-- LOGIN -->
-  <div id="loginBox" class="loginWrap" style="display:none; padding:20px; max-width:420px; margin:20px auto; background:var(--card); border-radius:12px;">
-    <h1 style="margin:0 0 12px">Acesso restrito</h1>
+  <div id="loginBox" class="loginWrap" style="display:none">
+    <h1>Acesso restrito</h1>
     <label>Email
       <input id="lgEmail" class="input" type="email" placeholder="voce@empresa.com">
     </label>
     <label>Senha
       <input id="lgPass" class="input" type="password" placeholder="••••••••">
     </label>
-    <div class="loginRow" style="margin-top:10px; display:flex; gap:8px; align-items:center">
+    <div class="loginRow">
       <button id="btnLogin" class="btn primary" style="width:160px"><span class="material-symbols-rounded">login</span>&nbsp;Entrar</button>
-      <span id="lgErr" class="err" style="color:var(--danger)"></span>
+      <span id="lgErr" class="err"></span>
     </div>
   </div>
 
@@ -175,16 +173,16 @@
           <div><h3>Disponíveis</h3><div class="val" id="kDisp">—</div></div>
         </div>
 
-        <div class="kpi">
-          <div class="icon i-red">⛔</div>
-          <div><h3>Indisponíveis</h3><div class="val" id="kInd">—</div></div>
-        </div>
+  <div class="kpi">
+    <div class="icon i-red">⛔</div>
+    <div><h3>Indisponíveis</h3><div class="val" id="kInd">—</div></div>
+  </div>
 
-        <div class="kpi">
-          <div class="icon i-blue">⏱</div>
-          <div><h3>Horas no mês</h3><div class="val" id="kHoras">—</div></div>
-        </div>
-      </div>
+  <div class="kpi">
+    <div class="icon i-blue">⏱</div>
+    <div><h3>Horas no mês</h3><div class="val" id="kHoras">—</div></div>
+  </div>
+</div>
 
       <!-- ====== BLOCO EXPORTÁVEL ====== -->
       <div id="exportArea">
@@ -201,38 +199,38 @@
         </div>
       </div>
 
-      <!-- FAIXA: DISPONÍVEL -->
-      <div class="hgroup">
-        <div class="hline">
-          <span class="hlabel">DISPONÍVEL <span class="muted" id="cntDISP">(0)</span></span>
-          <span class="hdivider"></span>
-        </div>
-        <div class="hlist" id="dispList"></div>
-      </div>
+<!-- FAIXA: DISPONÍVEL (DISPONÍVEL) -->
+<div class="hgroup">
+  <div class="hline">
+    <span class="hlabel">DISPONÍVEL <span class="muted" id="cntDISP">(0)</span></span>
+    <span class="hdivider"></span>
+  </div>
+  <div class="hlist" id="dispList"></div>
+</div>
 
-      <!-- FAIXA: INDISPONÍVEL -->
-      <div class="hgroup">
-        <div class="hline">
-          <span class="hlabel">INDISPONÍVEL <span class="muted" id="cntIND">(0)</span></span>
-          <span class="hdivider"></span>
-        </div>
-        <div class="hlist" id="indList"></div>
-      </div>
+<!-- FAIXA: INDISPONÍVEL (MNT) -->
+<div class="hgroup">
+  <div class="hline">
+    <span class="hlabel">INDISPONÍVEL <span class="muted" id="cntIND">(0)</span></span>
+    <span class="hdivider"></span>
+  </div>
+  <div class="hlist" id="indList"></div>
+</div>
 
-      <!-- Pizza -->
-      <div class="section">
-        <h2>Status do dia</h2>
-        <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
-          <div class="muted" id="pie_date_hint"></div>
-          <div style="flex:1"></div>
-          <label>Base
-            <select id="pieBase" style="min-width:180px">
-              <option value="">Todas</option>
-            </select>
-          </label>
+        <!-- Pizza -->
+        <div class="section">
+          <h2>Status do dia</h2>
+          <div class="row" style="gap:12px; align-items:center; flex-wrap:wrap">
+            <div class="muted" id="pie_date_hint"></div>
+            <div style="flex:1"></div>
+            <label>Base
+              <select id="pieBase" style="min-width:180px">
+                <option value="">Todas</option>
+              </select>
+            </label>
+          </div>
         </div>
-      </div>
-      <div id="pie_div"></div>
+        <div id="pie_div"></div>
       </div>
 
       <div class="divider"><span class="label">Indicadores de Disponibilidade</span></div>
@@ -269,7 +267,7 @@
       <!-- Pareto -->
       <div class="section">
         <h2>Pareto • Motivos de Manutenção</h2>
-        <div class="row" style="gap:14px; align-items:center; flex-wrap:wrap">
+        <div class="row" style="gap:14px;align-items:center;flex-wrap:wrap">
           <label>Período
             <select id="paretoRangeSel">
               <option value="15d">15 dias</option>
@@ -317,12 +315,12 @@
     </div>
   </div>
 
-  <!-- Modal holder: criado dinamicamente -->
+  <!-- Modal (inserido no DOM via HTML estático e controlado por JS) -->
   <div id="editModal" style="display:none"></div>
 
   <script>
     // ======= CONFIGURAÇÃO =======
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwGNWh1CxWxT_yA9E23V4j6ossYmOA1Tt2gn58Xp8DhY3vOGMGJjtiWuLZUn6gqiAY/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbz3iCMF44LtMRgWMo_oDsUiTK-T6a8oZQnrwHvYdwneSjDwPKzfkDhP8XntKCl3oUzd/exec';
     // ============================
 
     google.charts.load('current', {'packages':['corechart']});
@@ -336,7 +334,7 @@
     let HORAS_MAP = {};
     const getHoras = (pref) => Number(HORAS_MAP[String(pref||'').trim()] || 0);
 
-    // Últimos lookups recebidos (bases, prefixos, missoes, comandantes, copilotos, mecanicos)
+    // Últimos lookups recebidos (bases, prefixos, missoes, comandantes, mecanicos)
     let LOOKUPS = { bases:[], prefixos:[], missoes:[], comandantes:[], copilotos:[], mecanicos:[] };
 
     // fetch com proteção contra HTML de erro da implantação
@@ -413,7 +411,8 @@
         else btn.querySelector('span').textContent=`${selected.size} selecionadas`; };
       const render = ()=>{ list.innerHTML = items.map(v=>`<div class="ms-row"><input type="checkbox" id="${rootId}_${v}" value="${v}" ${selected.has(v)?'checked':''}><label for="${rootId}_${v}">${v}</label></div>`).join(''); all.checked = selected.size===items.length && items.length>0; updateBtn(); };
       btn.addEventListener('click', (e)=>{ e.stopPropagation(); root.classList.toggle('open'); });
-      document.addEventListener('click', ()=> root.classList.remove('open')); panel.addEventListener('click', (e)=> e.stopPropagation());
+      document.addEventListener('click', ()=> root.classList.remove('open'));
+      panel.addEventListener('click', (e)=> e.stopPropagation());
       all.addEventListener('change', ()=>{ selected = all.checked ? new Set(items) : new Set(); render(); });
       list.addEventListener('change', (e)=>{ if (e.target && e.target.type==='checkbox'){ const v=e.target.value; if (e.target.checked) selected.add(v); else selected.delete(v); all.checked = selected.size===items.length; updateBtn(); }});
       clear.addEventListener('click', ()=>{ selected.clear(); all.checked=false; render(); });
@@ -425,61 +424,60 @@
 
     function chip(status){
       const S = String(status||'').toUpperCase();
-      if (S==='STAND BY' || S==='DISPONIVEL') return '<span class="chip sb">DISPONÍVEL</span>';
+      if (S==='STAND BY') return '<span class="chip sb">DISPONÍVEL</span>';
       if (S==='MISSÃO' || S==='MISSAO') return '<span class="chip ms">EM MISSÃO</span>';
-      if (S==='MNT' || S==='INDISPONIVEL') return '<span class="chip mt">INDISPONÍVEL</span>';
+      if (S==='MNT') return '<span class="chip mt">INDISPONÍVEL</span>';
       return `<span class="chip">${status||'-'}</span>`;
     }
 
     // === Substitui a função renderListaGrouped antiga por esta (inclui data-prefixo) ===
    function renderListaGrouped(rows){
-      const baseSel = $('#progBase').value || '';
-      const norm = s => String(s||'').toLowerCase();
+  const baseSel = $('#progBase').value || '';
+  const norm = s => String(s||'').toLowerCase();
 
-      const DISP = []; // Disponível
-      const IND  = []; // Indisponível (MNT)
+  const DISP = []; // Disponível
+  const IND  = []; // Indisponível (MNT)
 
-      for (const r of rows){
-        if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
-        const st = String(r.Status||'').toUpperCase();
+  for (const r of rows){
+    if (baseSel && norm(r.Base)!==norm(baseSel)) continue;
+    const st = String(r.Status||'').toUpperCase();
 
-        const horas = getHoras(r.Prefixo);
-        const horasChip = horas > 0
-          ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
-          : '';
+    const horas = getHoras(r.Prefixo);
+    const horasChip = horas > 0
+      ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>`
+      : '';
 
-        // prefixo com atributo data-prefixo e classe clicável
-        const card = `
-          <div class="card" data-prefixo="${r.Prefixo||''}">
-            <div class="title">
-              <div class="prefixo" data-prefixo="${r.Prefixo||''}" title="Clique para alterar o status">${r.Prefixo||'-'}</div>
-              <div style="display:flex;gap:8px;align-items:center">
-                ${horasChip}
-                ${chip(r.Status)}
-              </div>
-            </div>
-            <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
-            <div class="meta">
-              <div><b>Missão:</b> ${r.Missao||'-'}</div>
-              <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
-              <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
-              ${r.Motivo_Manutencao ? `<div><b>Motivo:</b> ${r.Motivo_Manutencao}</div>` : ``}
-              ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
-            </div>
-            ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
-          </div>`;
+    // prefixo com atributo data-prefixo e classe clicável
+    const card = `
+      <div class="card" data-prefixo-card="${r.Prefixo||''}">
+        <div class="title">
+          <div class="prefixo" data-prefixo="${r.Prefixo||''}" title="Clique para alterar o status">${r.Prefixo||'-'}</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${horasChip}
+            ${chip(r.Status)}
+          </div>
+        </div>
+        <div class="muted">${r.Base||'-'} • ${r.Data||'-'}</div>
+        <div class="meta">
+          <div><b>Missão:</b> ${r.Missao||'-'}</div>
+          <div><b>CMTE:</b> ${r.Comandante||'-'}</div>
+          <div><b>MEC:</b> ${r.Mecanico||'-'}</div>
+          ${r.Motivo_Manutencao ? `<div><b>Manutenção:</b> ${r.Motivo_Manutencao}</div>` : ``}
+          ${r.Previsao ? `<div><b>Previsão:</b> ${r.Previsao}</div>` : ``}
+        </div>
+        ${r.Observacoes ? `<div class="muted" style="margin-top:8px">${r.Observacoes}</div>` : ``}
+      </div>`;
 
-        if (st==='MNT' || st==='INDISPONIVEL') IND.push(card);
-        else           DISP.push(card);
-      }
+    if (st==='MNT') IND.push(card);
+    else           DISP.push(card);
+  }
 
-      $('#dispList').innerHTML = DISP.length ? DISP.join('') : `<div class="muted">—</div>`;
-      $('#indList').innerHTML  = IND.length  ? IND.join('')  : `<div class="muted">—</div>`;
+  $('#dispList').innerHTML = DISP.length ? DISP.join('') : `<div class="muted">—</div>`;
+  $('#indList').innerHTML  = IND.length  ? IND.join('')  : `<div class="muted">—</div>`;
 
-      $('#cntDISP').textContent = `(${DISP.length})`;
-      $('#cntIND').textContent  = `(${IND.length})`;
-    }
-
+  $('#cntDISP').textContent = `(${DISP.length})`;
+  $('#cntIND').textContent  = `(${IND.length})`;
+}
     /* Charts */
     function drawColumns(rows, isMonthly){
       const dt = new google.visualization.DataTable();
@@ -517,26 +515,24 @@
     function drawPareto(rows){
       // rows: [{Motivo, Qtde}, ...]
       const dt = new google.visualization.DataTable();
-      dt.addColumn('string','Motivo'); dt.addColumn('number','Qtde'); dt.addColumn({type:'string', role:'annotation'});
-      rows.forEach(r=> dt.addRow([r.Motivo, Number(r.Qtde||0), String(r.Qtde||0)]));
-
-      // color mapping by motive name (Programada=green, Discrepância=red, Administrativa=yellow)
-      const colors = rows.map(r=>{
-        const s = String(r.Motivo||'').toLowerCase();
-        if (s.includes('program')) return '#22c55e';
-        if (s.includes('discrep')) return '#ef4444';
-        if (s.includes('administr') || s.includes('admin')) return '#f59e0b';
-        // fallback
-        return '#ef4444';
+      dt.addColumn('string','Motivo'); dt.addColumn('number','Qtde');
+      // role style para cor por barra
+      dt.addColumn({type:'string', role:'style'});
+      rows.forEach(r=>{
+        const m = String(r.Motivo||'').toLowerCase();
+        let color = '#ef4444'; // default vermelho
+        if (m.includes('program') || m.includes('programada')) color = '#22c55e'; // verde
+        else if (m.includes('discrep')) color = '#ef4444'; // vermelho
+        else if (m.includes('admin') || m.includes('administr')) color = '#fbbf24'; // amarelo
+        else color = '#9ca3af';
+        dt.addRow([r.Motivo, Number(r.Qtde||0), `color: ${color}`]);
       });
-
       const options = {
         backgroundColor:'transparent', legend:'none',
         annotations:{ textStyle:{ color:'#e5e7eb', bold:true }},
         hAxis:{ textStyle:{ color:'#94a3b8' }, gridlines:{ color:'#1f2937' }, minValue:0 },
         vAxis:{ textStyle:{ color:'#94a3b8' } },
-        colors: colors,
-        chartArea:{ left:120, top:10, right:20, height:260 }, height:360
+        colors:['#ef4444'], chartArea:{ left:120, top:10, right:20, height:260 }, height:360
       };
       new google.visualization.BarChart($('#pareto_div')).draw(dt, options);
     }
@@ -565,6 +561,8 @@
           h.data.rows.forEach(r => {
             HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0);
           });
+        } else if (h && h.ok && h.data && h.data.rows === undefined && h.data.ok === false) {
+          // ignore
         }
       }catch(e){ /* segue sem horas se falhar */ }
 
@@ -574,57 +572,51 @@
       const res = await apiFetch(qs);
       const data = res.data;
 
-      // atualiza LOOKUPS globais (sevier se backend retornar missoes/comandantes/mecanicos)
-      if (data && data.lookups){
-        LOOKUPS.bases = data.lookups.bases || LOOKUPS.bases;
-        LOOKUPS.prefixos = data.lookups.prefixos || LOOKUPS.prefixos;
-        // optional arrays (may be undefined if backend not returning them)
-        LOOKUPS.missoes = data.lookups.missoes || LOOKUPS.missoes || [];
-        LOOKUPS.comandantes = data.lookups.comandantes || LOOKUPS.comandantes || [];
-        LOOKUPS.mecanicos = data.lookups.mecanicos || LOOKUPS.mecanicos || [];
-      }
+      // atualiza LOOKUPS globais
+      LOOKUPS = data.lookups || LOOKUPS;
 
       if ($('#baseChart').options.length<=1){
-        const basesOpt   = '<option value="">Todas</option>' + (data.lookups.bases||[]).map(v=>`<option>${v}</option>`).join('');
-        const prefOpt    = '<option value="">Todas</option>' + (data.lookups.prefixos||[]).map(v=>`<option>${v}</option>`).join('');
+        const basesOpt   = '<option value="">Todas</option>' + data.lookups.bases.map(v=>`<option>${v}</option>`).join('');
+        const prefOpt    = '<option value="">Todas</option>' + data.lookups.prefixos.map(v=>`<option>${v}</option>`).join('');
         $('#baseChart').innerHTML = basesOpt;
         $('#pieBase').innerHTML   = basesOpt;
         $('#progBase').innerHTML  = basesOpt;
         $('#prefChart').innerHTML = prefOpt;
 
-        msBases.setItems(data.lookups.bases || []);
-        msPrefixos.setItems(data.lookups.prefixos || []);
+        msBases.setItems(data.lookups.bases);
+        msPrefixos.setItems(data.lookups.prefixos);
       }
 
-      renderListaGrouped(data.list || []);
+      renderListaGrouped(data.list);
       // Total vindo do backend (deduplicado/filtrado). Fallback = soma do mapa.
-      let totalHoras = 0;
-      try{
-        const h = await apiFetch({ fn:'horas', date });
-        if (h && h.ok && h.data){
-          HORAS_MAP = {};
-          if (Array.isArray(h.data.rows)){
-            h.data.rows.forEach(r => {
-              HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0);
-            });
-          }
-          totalHoras = Number(h.data.total || 0);
-          if (!totalHoras){
-            totalHoras = Object.values(HORAS_MAP).reduce((acc,v)=>acc+(Number(v)||0),0);
-          }
-        }
-      }catch(e){ /* mantém 0 em caso de erro */ }
-
-      $('#kDisp').textContent  = data.kpis.disponiveis ?? '0';
-      $('#kInd').textContent   = data.kpis.manutencao ?? '0';
-      $('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
-        minimumFractionDigits:1, maximumFractionDigits:1
+let totalHoras = 0;
+try{
+  const h = await apiFetch({ fn:'horas', date });
+  if (h && h.ok && h.data){
+    // preencher HORAS_MAP (para chips nos cards)
+    HORAS_MAP = {};
+    if (Array.isArray(h.data.rows)){
+      h.data.rows.forEach(r => {
+        HORAS_MAP[String(r.Aeronave||'').trim()] = Number(r.Horas||0);
       });
+    }
+    totalHoras = Number(h.data.total || 0);
+    if (!totalHoras){
+      totalHoras = Object.values(HORAS_MAP).reduce((acc,v)=>acc+(Number(v)||0),0);
+    }
+  }
+}catch(e){ /* mantém 0 em caso de erro */ }
+
+$('#kDisp').textContent  = data.kpis.disponiveis ?? '0';
+$('#kInd').textContent   = data.kpis.manutencao ?? '0';
+$('#kHoras').textContent = Number(totalHoras).toLocaleString('pt-BR',{
+  minimumFractionDigits:1, maximumFractionDigits:1
+});
 
       google.charts.setOnLoadCallback(()=> {
-        drawPie(data.pie || [], date);
-        drawColumns(data.series || [], range==='12m');
-        drawPareto(data.pareto || []);
+        drawPie(data.pie, date);
+        drawColumns(data.series, range==='12m');
+        drawPareto(data.pareto);
       });
     }
     const refreshPareto = debounce(refreshAll, 150);
@@ -635,93 +627,88 @@
         fn: 'setstatus',
         prefixo,
         status,
-        date: extras.date || (document.getElementById('fData') && document.getElementById('fData').value) || '',
-        missao: extras.missao || '',
-        comandante: extras.comandante || '',
-        mecanico: extras.mecanico || '',
-        motivo: extras.motivo || '',
-        obs: extras.obs || ''
+        ...extras
       };
       const r = await apiFetch(params);
       if (!r || !r.ok) throw new Error((r && r.error) || 'Falha ao salvar');
       return r.data;
     }
 
-    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC ===== */
-    function buildModalHtml(prefixo){
+    /* ===== Modal UI para editar status + seleção de Missão/CMTE/MEC + motivo ===== */
+    function buildModalHtml(prefixo, lookups){
       // fallback arrays seguros
-      const missoes = (LOOKUPS && LOOKUPS.missoes && LOOKUPS.missoes.length) ? LOOKUPS.missoes : [];
-      const cmtes   = (LOOKUPS && LOOKUPS.comandantes && LOOKUPS.comandantes.length) ? LOOKUPS.comandantes : [];
-      const mecs    = (LOOKUPS && LOOKUPS.mecanicos && LOOKUPS.mecanicos.length) ? LOOKUPS.mecanicos : [];
-
-      // If lookup arrays are empty, still provide option to "Digitar"
-      const missaoOptions = missoes.length ? missoes.map(m=>`<option value="${m}">${m}</option>`).join('') : '';
-      const cmteOptions = cmtes.length ? cmtes.map(m=>`<option value="${m}">${m}</option>`).join('') : '';
-      const mecOptions = mecs.length ? mecs.map(m=>`<option value="${m}">${m}</option>`).join('') : '';
+      const bases = (lookups && lookups.bases) ? lookups.bases : [];
+      const missoes = (lookups && lookups.missoes) ? lookups.missoes : [];
+      const cmtes   = (lookups && lookups.comandantes) ? lookups.comandantes : [];
+      const mecs    = (lookups && lookups.mecanicos) ? lookups.mecanicos : [];
 
       return `
         <div class="modal-backdrop" id="modalBackdrop">
           <div class="modal" role="dialog" aria-modal="true">
             <h3>Editar status — ${prefixo}</h3>
 
-            <div class="row">
+            <div class="stack">
               <div class="small">Escolha 1 = Disponível ou 2 = Indisponível</div>
               <div style="display:flex;gap:8px;margin-top:6px">
-                <button id="optDisponivel" class="btn primary" type="button">1 — Disponível</button>
-                <button id="optIndisponivel" class="btn" type="button">2 — Indisponível</button>
+                <button id="optDisponivel" class="btn primary">1 — Disponível</button>
+                <button id="optIndisponivel" class="btn">2 — Indisponível</button>
               </div>
-            </div>
 
-            <div class="row">
-              <label>Motivo de Indisponibilidade (se 2 selecionado)
-                <select id="selMotivo" class="input">
-                  <option value="">— Selecione —</option>
-                  <option value="Programada">Programada</option>
-                  <option value="Discrepância">Discrepância</option>
-                  <option value="Administrativa">Administrativa</option>
-                </select>
-                <div id="motivoHelp" class="small" style="margin-top:6px">Obrigatório quando Indisponível.</div>
-              </label>
-            </div>
+              <div class="inline" style="margin-top:8px">
+                <label style="flex:1">Base
+                  <select id="selBase" class="input">
+                    <option value="">— Selecione —</option>
+                    ${bases.map(b=>`<option>${b}</option>`).join('')}
+                  </select>
+                </label>
 
-            <div class="row">
-              <label>Missão
-                <select id="selMissao" class="input">
-                  <option value="">— Selecione —</option>
-                  ${missaoOptions}
-                  <option value="__OUTRO__">— Digitar outro —</option>
-                </select>
-                <input id="inpMissao" class="input" style="margin-top:6px;display:none" placeholder="Digite a missão">
-              </label>
+                <label style="flex:1">Motivo (se Indisponível)
+                  <select id="selMotivo" class="input">
+                    <option value="">— Selecione —</option>
+                    <option value="Programada">Programada</option>
+                    <option value="Discrepância">Discrepância</option>
+                    <option value="Administrativa">Administrativa</option>
+                  </select>
+                </label>
+              </div>
 
-              <label>Comandante
-                <select id="selCmte" class="input">
-                  <option value="">— Selecione —</option>
-                  ${cmteOptions}
-                  <option value="__OUTRO__">— Digitar outro —</option>
-                </select>
-                <input id="inpCmte" class="input" style="margin-top:6px;display:none" placeholder="Digite o comandante">
-              </label>
+              <div class="stack" style="margin-top:6px">
+                <label>Missão
+                  <select id="selMissao" class="input">
+                    <option value="">— Selecione —</option>
+                    ${missoes.map(m => `<option>${m}</option>`).join('')}
+                    <option value="__OUTRO__">Outro (digitar)</option>
+                  </select>
+                  <input id="inpMissao" class="input" style="margin-top:6px;display:none" placeholder="Digite a missão">
+                </label>
 
-              <label>Mecânico
-                <select id="selMec" class="input">
-                  <option value="">— Selecione —</option>
-                  ${mecOptions}
-                  <option value="__OUTRO__">— Digitar outro —</option>
-                </select>
-                <input id="inpMec" class="input" style="margin-top:6px;display:none" placeholder="Digite o mecânico">
-              </label>
-            </div>
+                <label>Comandante
+                  <select id="selCmte" class="input">
+                    <option value="">— Selecione —</option>
+                    ${cmtes.map(m => `<option>${m}</option>`).join('')}
+                    <option value="__OUTRO__">Outro (digitar)</option>
+                  </select>
+                  <input id="inpCmte" class="input" style="margin-top:6px;display:none" placeholder="Digite o comandante">
+                </label>
 
-            <div class="row">
+                <label>Mecânico
+                  <select id="selMec" class="input">
+                    <option value="">— Selecione —</option>
+                    ${mecs.map(m => `<option>${m}</option>`).join('')}
+                    <option value="__OUTRO__">Outro (digitar)</option>
+                  </select>
+                  <input id="inpMec" class="input" style="margin-top:6px;display:none" placeholder="Digite o mecânico">
+                </label>
+              </div>
+
               <label>Observações
                 <input id="inpObs" class="input" placeholder="Observações (opcional)">
               </label>
             </div>
 
             <div class="actions">
-              <button id="btnCancel" class="btn" type="button">Cancelar</button>
-              <button id="btnSave" class="btn primary" type="button">Salvar</button>
+              <button id="btnCancel" class="btn">Cancelar</button>
+              <button id="btnSave" class="btn primary">Salvar</button>
             </div>
           </div>
         </div>
@@ -729,14 +716,24 @@
     }
 
     async function showEditModal(prefixo){
-      // remove modal anterior se existir
-      const prev = document.getElementById('modalBackdrop');
-      if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
+      // garante lookups atualizados (tenta cache LOOKUPS, senão busca)
+      try{
+        if (!LOOKUPS || !LOOKUPS.missoes || LOOKUPS.missoes.length===0){
+          const res = await apiFetch({ fn: 'lookups' });
+          if (res && res.ok && res.data) LOOKUPS = res.data;
+        }
+      }catch(e){
+        // se falhar, segue com arrays vazios — modal ainda abre
+        console.warn('Não foi possível carregar lookups:', e);
+      }
 
-      // cria modal
+      // cria modal e anexa ao body (remove modal anterior se existir)
+      const existing = document.getElementById('modalBackdrop');
+      if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
       const container = document.createElement('div');
-      container.innerHTML = buildModalHtml(prefixo);
-      document.body.appendChild(container.firstElementChild);
+      container.innerHTML = buildModalHtml(prefixo, LOOKUPS);
+      document.body.appendChild(container.firstElementChild); // anexa only the backdrop
 
       // elementos
       const bp = document.getElementById('modalBackdrop');
@@ -747,8 +744,8 @@
       const inpCmte   = document.getElementById('inpCmte');
       const inpMec    = document.getElementById('inpMec');
       const inpObs    = document.getElementById('inpObs');
+      const selBase   = document.getElementById('selBase');
       const selMotivo = document.getElementById('selMotivo');
-      const motivoHelp = document.getElementById('motivoHelp');
 
       // toggle "Outro (digitar)"
       selMissao && selMissao.addEventListener('change', ()=> { inpMissao.style.display = selMissao.value==='__OUTRO__' ? 'block' : 'none'; });
@@ -757,45 +754,33 @@
 
       // Buttons
       document.getElementById('btnCancel').addEventListener('click', ()=> { const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b); });
-      const btnSave = document.getElementById('btnSave');
-
-      btnSave.addEventListener('click', async ()=>{
-        // determinar status
+      document.getElementById('btnSave').addEventListener('click', async ()=>{
+        // qual botão ativo
         const sDisp = document.getElementById('optDisponivel').classList.contains('primary');
         const sInd  = document.getElementById('optIndisponivel').classList.contains('primary');
-        const status = sInd ? 'INDISPONIVEL' : 'DISPONIVEL';
+        let status = sDisp ? 'DISPONIVEL' : (sInd ? 'INDISPONIVEL' : 'DISPONIVEL');
 
-        // quando indisponível, motivo obrigatório
-        const motivoVal = (selMotivo && selMotivo.value) ? selMotivo.value : '';
-        if (sInd && !motivoVal){
-          alert('Selecione o motivo de indisponibilidade (Programada / Discrepância / Administrativa).');
-          return;
-        }
-
-        // Missao / Cmte / Mec
         const missao = (selMissao && selMissao.value === '__OUTRO__') ? (inpMissao.value.trim()||'') : (selMissao ? selMissao.value : '');
         const comandante = (selCmte && selCmte.value === '__OUTRO__') ? (inpCmte.value.trim()||'') : (selCmte ? selCmte.value : '');
         const mecanico = (selMec && selMec.value === '__OUTRO__') ? (inpMec.value.trim()||'') : (selMec ? selMec.value : '');
         const obs = inpObs ? inpObs.value.trim() : '';
+        const base = selBase ? selBase.value : '';
+        const motivo = selMotivo ? selMotivo.value : '';
 
-        // visual feedback
-        btnSave.classList.add('btnLoading');
-        btnSave.textContent = 'Salvando...';
+        // otimistic UI update: move card imediatamente
+        try{
+          optimisticMoveCard(prefixo, status, { missao, comandante, mecanico, motivo, base, obs });
+        }catch(e){ console.warn('optimistic update falhou',e); }
 
         try{
-          await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, motivo: motivoVal, obs, date: (document.getElementById('fData')&&document.getElementById('fData').value) || '' });
-          // fecha modal e atualiza
+          await setStatusPrefixo(prefixo, status, { missao, comandante, mecanico, motivo, base, obs, date: $('#fData').value || '' });
           const b = document.getElementById('modalBackdrop'); if (b && b.parentNode) b.parentNode.removeChild(b);
+          // garante consistência: recarrega tudo
           await refreshAll();
         }catch(err){
-          console.error(err);
           alert('Erro ao salvar: ' + (err.message||err));
-        }finally{
-          // restore label (if modal still open)
-          if (document.getElementById('btnSave')){
-            document.getElementById('btnSave').classList.remove('btnLoading');
-            document.getElementById('btnSave').textContent = 'Salvar';
-          }
+          // se falhar, recarrega do backend para voltar ao estado correto
+          await refreshAll();
         }
       });
 
@@ -803,8 +788,8 @@
       const btnDisp = document.getElementById('optDisponivel');
       const btnInd  = document.getElementById('optIndisponivel');
       const setActive = (which)=>{
-        if (which==='disp'){ btnDisp.classList.add('primary'); btnInd.classList.remove('primary'); selMotivo.value=''; motivoHelp.style.display='none'; }
-        else { btnInd.classList.add('primary'); btnDisp.classList.remove('primary'); motivoHelp.style.display='block'; }
+        if (which==='disp'){ btnDisp.classList.add('primary'); btnInd.classList.remove('primary'); }
+        else { btnInd.classList.add('primary'); btnDisp.classList.remove('primary'); }
       };
       btnDisp.addEventListener('click', ()=> setActive('disp'));
       btnInd.addEventListener('click', ()=> setActive('ind'));
@@ -814,8 +799,55 @@
       bp.addEventListener('click', (ev)=>{ if (ev.target === bp){ if (bp && bp.parentNode) bp.parentNode.removeChild(bp); } });
     }
 
-    // Delegação de clique: garante que prefixos dinâmicos abram modal
+    // optimistic DOM update: move card to correct list and update chip + meta quickly
+    function optimisticMoveCard(prefixo, status, extras){
+      const card = document.querySelector(`[data-prefixo-card="${prefixo}"]`);
+      if (!card) return;
+      // update chip
+      const right = card.querySelector('.title > div:last-child');
+      if (right){
+        // replace chip (simple)
+        const horas = getHoras(prefixo);
+        const horasChip = horas > 0 ? `<span class="chip hr">${horas.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} h</span>` : '';
+        right.innerHTML = `${horasChip} ${status && String(status).toUpperCase().indexOf('INDISP')===0 ? '<span class="chip mt">INDISPONÍVEL</span>' : '<span class="chip sb">DISPONÍVEL</span>'}`;
+      }
+      // update meta fields
+      const meta = card.querySelector('.meta');
+      if (meta && extras){
+        const missao = extras.missao || '';
+        const cmte = extras.comandante || '';
+        const mec = extras.mecanico || '';
+        // replace first three lines — keep other fields if present
+        const rest = [];
+        meta.querySelectorAll('div').forEach((d,i)=>{
+          // collect any lines beyond the first 5 to keep
+          if (i>=5) rest.push(d.outerHTML);
+        });
+        meta.innerHTML = `<div><b>Missão:</b> ${missao||'-'}</div>
+                          <div><b>CMTE:</b> ${cmte||'-'}</div>
+                          <div><b>MEC:</b> ${mec||'-'}</div>
+                          ${extras.motivo ? `<div><b>Manutenção:</b> ${extras.motivo}</div>` : ''}
+                          ${rest.join('')}`;
+      }
+      // move to list
+      if (String(status).toUpperCase().indexOf('INDISP')===0){
+        // to ind
+        const target = $('#indList');
+        if (target) target.appendChild(card);
+      } else {
+        const target = $('#dispList');
+        if (target) target.appendChild(card);
+      }
+      // update counts quickly
+      const dispCount = document.querySelectorAll('#dispList .card').length;
+      const indCount = document.querySelectorAll('#indList .card').length;
+      $('#cntDISP').textContent = `(${dispCount})`;
+      $('#cntIND').textContent  = `(${indCount})`;
+    }
+
+    // === Delegação de clique: garante que prefixos dinâmicos abram modal ===
     document.addEventListener('click', (ev) => {
+      // busca o elemento .prefixo com data-prefixo mais próximo do alvo do clique
       const el = ev.target.closest('.prefixo[data-prefixo]');
       if (!el) return;
       const prefixo = el.getAttribute('data-prefixo') || el.textContent.trim();
@@ -854,50 +886,54 @@
       }
     })();
 
-    /* ====== Baixar PDF ====== */
-    async function downloadPDF(){
-      try{
-        const node = document.getElementById('exportRoot') || document.getElementById('exportArea');
-        if (!node) { alert('Não encontrei a área a exportar (exportRoot/exportArea).'); return; }
+  /* ====== Baixar PDF ====== */
+  async function downloadPDF(){
+    try{
+      // usa exportRoot; se não existir, cai para exportArea
+      const node = document.getElementById('exportRoot') || document.getElementById('exportArea');
+      if (!node) { alert('Não encontrei a área a exportar (exportRoot/exportArea).'); return; }
 
-        if (!window.html2canvas) { alert('html2canvas não carregado.'); return; }
-        if (!window.jspdf || !window.jspdf.jsPDF) { alert('jsPDF não carregado.'); return; }
+      if (!window.html2canvas) { alert('html2canvas não carregado.'); return; }
+      if (!window.jspdf || !window.jspdf.jsPDF) { alert('jsPDF não carregado.'); return; }
 
-        await new Promise(r=>requestAnimationFrame(r));
+      // espera layout estabilizar (gráficos etc.)
+      await new Promise(r=>requestAnimationFrame(r));
 
-        const scale = Math.max(2, (window.devicePixelRatio || 1)) * 1.25;
-        const canvas = await html2canvas(node, {
-          backgroundColor: getComputedStyle(document.body).backgroundColor || '#0b1320',
-          scale,
-          useCORS: true,
-          windowWidth: Math.max(document.documentElement.clientWidth, node.scrollWidth)
-        });
+      // render em alta resolução
+      const scale = Math.max(2, (window.devicePixelRatio || 1)) * 1.25;
+      const canvas = await html2canvas(node, {
+        backgroundColor: getComputedStyle(document.body).backgroundColor || '#0b1320',
+        scale,
+        useCORS: true,
+        windowWidth: Math.max(document.documentElement.clientWidth, node.scrollWidth)
+      });
 
-        const imgData = canvas.toDataURL('image/png');
-        const w = canvas.width, h = canvas.height;
+      const imgData = canvas.toDataURL('image/png');
+      const w = canvas.width, h = canvas.height;
 
-        const margin = 36;
-        const pdfW = w + margin * 2;
-        const pdfH = h + margin * 2;
+      // margem bonita ~0.5"
+      const margin = 36;
+      const pdfW = w + margin * 2;
+      const pdfH = h + margin * 2;
 
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({
-          orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
-          unit: 'pt',
-          format: [pdfW, pdfH]
-        });
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({
+        orientation: pdfW >= pdfH ? 'landscape' : 'portrait',
+        unit: 'pt',
+        format: [pdfW, pdfH]
+      });
 
-        pdf.addImage(imgData, 'PNG', margin, margin, w, h, undefined, 'FAST');
-        pdf.save(`Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`);
-      }catch(err){
-        console.error('Erro ao gerar PDF:', err);
-        alert('Não foi possível gerar o PDF. Veja o console (F12) para detalhes.');
-      }
+      pdf.addImage(imgData, 'PNG', margin, margin, w, h, undefined, 'FAST');
+      pdf.save(`Dashboard_Frota_${new Date().toISOString().slice(0,10)}.pdf`);
+    }catch(err){
+      console.error('Erro ao gerar PDF:', err);
+      alert('Não foi possível gerar o PDF. Veja o console (F12) para detalhes.');
     }
+  }
 
-    // liga o botão (uma vez só)
-    const btnDl = document.getElementById('btnDownload');
-    if (btnDl) btnDl.onclick = downloadPDF;
+  // liga o botão (uma vez só)
+  const btnDl = document.getElementById('btnDownload');
+  if (btnDl) btnDl.onclick = downloadPDF;
   </script>
 
 </body>
